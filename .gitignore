@@ -4,7 +4,9 @@ build
 dist
 testrunner
 TestResult.xml
+*.nupkg
 *.suo
 *.user
 *.cache
 *.dotCover
+*.userprefs

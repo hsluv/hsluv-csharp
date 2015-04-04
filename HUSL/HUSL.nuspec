@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>HUSL</id>
+    <version>1.0.0</version>
+    <authors>Alexei Boronine</authors>
+    <owners>Alexei Boronine</owners>
+    <licenseUrl>https://raw.githubusercontent.com/husl-colors/husl.cs/master/LICENSE.txt</licenseUrl>
+    <projectUrl>http://www.husl-colors.org</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Human-friendly HSL</description>
+    <copyright>Copyright 2015</copyright>
+    <tags>Color ColorSpace HSL HUSL CIELUV CIELCh</tags>
+    <references>
+      <reference file="HUSL.dll" />
+    </references>
+  </metadata>
+  <files>
+    <file src="bin/Release/*.dll" target="lib/net40" />
+  </files>
+</package>
