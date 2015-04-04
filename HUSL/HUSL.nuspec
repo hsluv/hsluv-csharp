@@ -2,11 +2,11 @@
 <package>
   <metadata>
     <id>HUSL</id>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <authors>Alexei Boronine</authors>
     <owners>Alexei Boronine</owners>
     <licenseUrl>https://raw.githubusercontent.com/husl-colors/husl.cs/master/LICENSE.txt</licenseUrl>
-    <projectUrl>http://www.husl-colors.org</projectUrl>
+    <projectUrl>https://github.com/husl-colors/husl.cs</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Human-friendly HSL</description>
     <copyright>Copyright 2015</copyright>

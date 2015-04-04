@@ -1,11 +1,30 @@
 [![Build Status](https://travis-ci.org/husl-colors/husl.cs.svg?branch=master)](https://travis-ci.org/husl-colors/husl.cs)
+[![Package Version](https://img.shields.io/nuget/v/HUSL.svg)](https://www.nuget.org/packages/HUSL)
 
 [Explanation, demo, ports etc.](http://www.husl-colors.org)
+
+# API
+
+This library provides the `HUSL` namespace with `ColorConverter` class with
+the following static methods. Tuples are three items each: R, G, B and H, S, L.
+
+    IList<double> HUSLToRGB(IList<double> tuple)
+	IList<double> RGBToHUSL(IList<double> tuple)
+	IList<double> HUSLPToRGB(IList<double> tuple)
+	IList<double> RGBToHUSLP(IList<double> tuple)
+
+	string HUSLToHex(IList<double> tuple)
+	string HUSLPToHex(IList<double> tuple)
+	IList<double> HexToHUSL(string s)
+	IList<double> HexToHUSLP(string s)
+
+# Building and Testing
+
+See `Dockerfile` for instructions or run `docker build .`
 
 # Packaging
 
     $ cd HUSL
-    $ mozroots --import --sync
     $ vim HUSL.nuspec
     $ nuget pack HUSL.nuspec
 
