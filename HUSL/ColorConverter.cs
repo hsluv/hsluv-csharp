@@ -431,12 +431,14 @@ namespace HUSL
 			return LUVToLCH(XYZToLUV(RGBToXYZ(tuple)));
 		}
 
+		// RGB <--> HUSL(p)
+
 		public static IList<double> HUSLToRGB(IList<double> tuple)
 		{
 			return LCHToRGB(HUSLToLCH(tuple));
 		}
 
-		public static IList<double> RGBtoHUSL(IList<double> tuple)
+		public static IList<double> RGBToHUSL(IList<double> tuple)
 		{
 			return LCHToHUSL(RGBToLCH(tuple));
 		}
@@ -446,11 +448,32 @@ namespace HUSL
 			return LCHToRGB(HUSLPToLCH(tuple));
 		}
 
-		public static IList<double> RGBtoHUSLP(IList<double> tuple)
+		public static IList<double> RGBToHUSLP(IList<double> tuple)
 		{
 			return LCHToHUSLP(RGBToLCH(tuple));
 		}
 
+		// Hex
+
+		public static string HUSLToHex(IList<double> tuple)
+		{
+			return RGBToHex (HUSLToRGB (tuple));
+		}
+
+		public static string HUSLPToHex(IList<double> tuple)
+		{
+			return RGBToHex (HUSLPToRGB (tuple));
+		}
+			
+		public static IList<double> HexToHUSL(string s)
+		{
+			return RGBToHUSL (HexToRGB (s));
+		}
+
+		public static IList<double> HexToHUSLP(string s)
+		{
+			return RGBToHUSLP (HexToRGB (s));
+		}
 	}
 }
 

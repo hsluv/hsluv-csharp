@@ -101,10 +101,11 @@ namespace HUSLTest
 					Assert.AreEqual(ColorConverter.RGBToHex(test_rgb), pair.Key);
 
 					// full test
-					//Assert(HUSL.HUSLToHex(Cast(expected["husl"])) == pair.Key);
-					//assert_tuples_close({husl.hex_to_husl(hex_color)}, colors.husl)
-					//Assert(HUSL.HUSLPToHex() == pair.Key);
-					//assert_tuples_close({husl.hex_to_huslp(hex_color)}, colors.huslp)
+					Assert.AreEqual(ColorConverter.HUSLToHex(Cast(expected["husl"])), pair.Key);
+					Assert.AreEqual(ColorConverter.HUSLPToHex(Cast(expected["huslp"])), pair.Key);
+
+					AssertTuplesClose(Cast(expected["husl"]), ColorConverter.HexToHUSL(pair.Key));
+					AssertTuplesClose(Cast(expected["huslp"]), ColorConverter.HexToHUSLP(pair.Key));
 				}
 			}
 		}
