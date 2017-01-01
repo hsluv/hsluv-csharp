@@ -52,7 +52,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\JSONSnapshotRev3.txt" />
+    <EmbeddedResource Include="Resources\JsonSnapshotRev3.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />

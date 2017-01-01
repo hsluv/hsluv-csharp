@@ -61,7 +61,7 @@ namespace HsluvTest
 		public void HsluvTest()
 		{
 			var assembly = Assembly.GetExecutingAssembly();
-			var resourceName = "HsluvTest.Resources.JSONSnapshotRev3.txt";
+			var resourceName = "HsluvTest.Resources.JsonSnapshotRev3.txt";
 
 			using (Stream stream = assembly.GetManifestResourceStream(resourceName))
 			using (StreamReader reader = new StreamReader(stream))
@@ -82,15 +82,15 @@ namespace HsluvTest
 					AssertTuplesClose(test_luv, Cast(expected["luv"]));
 					var test_lch = ColorConverter.LuvToLch(test_luv);
 					AssertTuplesClose(test_lch, Cast(expected["lch"]));
-					var test_husl = ColorConverter.LchToHsluv(test_lch);
-					AssertTuplesClose(test_husl, Cast(expected["husl"]));
-					var test_huslp = ColorConverter.LchToHpluv(test_lch);
-					AssertTuplesClose(test_huslp, Cast(expected["huslp"]));
+					var test_hsluv = ColorConverter.LchToHsluv(test_lch);
+					AssertTuplesClose(test_hsluv, Cast(expected["hsluv"]));
+					var test_hpluv = ColorConverter.LchToHpluv(test_lch);
+					AssertTuplesClose(test_hpluv, Cast(expected["hpluv"]));
 
 					// test backward functions
-					test_lch = ColorConverter.HsluvToLch(Cast(expected["husl"]));
+					test_lch = ColorConverter.HsluvToLch(Cast(expected["hsluv"]));
 					AssertTuplesClose(test_lch, Cast(expected["lch"]));
-					test_lch = ColorConverter.HpluvToLch(Cast(expected["huslp"]));
+					test_lch = ColorConverter.HpluvToLch(Cast(expected["hpluv"]));
 					AssertTuplesClose(test_lch, Cast(expected["lch"]));
 					test_luv = ColorConverter.LchToLuv(test_lch);
 					AssertTuplesClose(test_luv, Cast(expected["luv"]));
@@ -101,11 +101,11 @@ namespace HsluvTest
 					Assert.AreEqual(ColorConverter.RgbToHex(test_rgb), pair.Key);
 
 					// full test
-					Assert.AreEqual(ColorConverter.HsluvToHex(Cast(expected["husl"])), pair.Key);
-					Assert.AreEqual(ColorConverter.HpluvToHex(Cast(expected["huslp"])), pair.Key);
+					Assert.AreEqual(ColorConverter.HsluvToHex(Cast(expected["hsluv"])), pair.Key);
+					Assert.AreEqual(ColorConverter.HpluvToHex(Cast(expected["hpluv"])), pair.Key);
 
-					AssertTuplesClose(Cast(expected["husl"]), ColorConverter.HexToHsluv(pair.Key));
-					AssertTuplesClose(Cast(expected["huslp"]), ColorConverter.HexToHpluv(pair.Key));
+					AssertTuplesClose(Cast(expected["hsluv"]), ColorConverter.HexToHsluv(pair.Key));
+					AssertTuplesClose(Cast(expected["hpluv"]), ColorConverter.HexToHpluv(pair.Key));
 				}
 			}
 		}
