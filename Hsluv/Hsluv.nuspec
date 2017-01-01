@@ -9,13 +9,13 @@
     <projectUrl>https://github.com/hsluv/hsluv-csharp</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Human-friendly HSL</description>
-    <copyright>Copyright 2015</copyright>
+    <copyright>Copyright 2016</copyright>
     <tags>Color ColorSpace HSL Hsluv CIELuv CIELCh</tags>
     <references>
       <reference file="Hsluv.dll" />
     </references>
   </metadata>
   <files>
-    <file src="bin/Release/*.dll" target="lib/net40" />
+    <file src="*.dll" target="lib/net40" />
   </files>
 </package>
