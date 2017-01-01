@@ -1,22 +1,22 @@
-[![Build Status](https://travis-ci.org/husl-colors/husl.cs.svg?branch=master)](https://travis-ci.org/husl-colors/husl.cs)
-[![Package Version](https://img.shields.io/nuget/v/HUSL.svg)](https://www.nuget.org/packages/HUSL)
+[![Build Status](https://travis-ci.org/hsluv/husl.cs.svg?branch=master)](https://travis-ci.org/hsluv/husl.cs)
+[![Package Version](https://img.shields.io/nuget/v/Hsluv.svg)](https://www.nuget.org/packages/Hsluv)
 
-[Explanation, demo, ports etc.](http://www.husl-colors.org)
+[Explanation, demo, ports etc.](http://www.hsluv.org)
 
 # API
 
-This library provides the `HUSL` namespace with `ColorConverter` class with
+This library provides the `Hsluv` namespace with `ColorConverter` class with
 the following static methods. Tuples are three items each: R, G, B and H, S, L.
 
-    IList<double> HUSLToRGB(IList<double> tuple)
-	IList<double> RGBToHUSL(IList<double> tuple)
-	IList<double> HUSLPToRGB(IList<double> tuple)
-	IList<double> RGBToHUSLP(IList<double> tuple)
+    IList<double> HsluvToRgb(IList<double> tuple)
+	IList<double> RgbToHsluv(IList<double> tuple)
+	IList<double> HpluvToRgb(IList<double> tuple)
+	IList<double> RgbToHpluv(IList<double> tuple)
 
-	string HUSLToHex(IList<double> tuple)
-	string HUSLPToHex(IList<double> tuple)
-	IList<double> HexToHUSL(string s)
-	IList<double> HexToHUSLP(string s)
+	string HsluvToHex(IList<double> tuple)
+	string HpluvToHex(IList<double> tuple)
+	IList<double> HexToHsluv(string s)
+	IList<double> HexToHpluv(string s)
 
 # Building and Testing
 
@@ -24,9 +24,9 @@ See `Dockerfile` for instructions or run `docker build .`
 
 # Packaging
 
-    $ cd HUSL
-    $ vim HUSL.nuspec
-    $ nuget pack HUSL.nuspec
+    $ cd Hsluv
+    $ vim Hsluv.nuspec
+    $ nuget pack Hsluv.nuspec
 
 # Authors
 

@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
 
-namespace HUSLTest
+namespace HsluvTest
 {
 	[TestFixture ()]
 	public class NUnitTestClass

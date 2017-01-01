@@ -4,13 +4,13 @@ using System.IO;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
-using HUSLTest;
-using HUSL;
+using HsluvTest;
+using Hsluv;
 using NUnit.Framework;
 using NUnit.Core;
 using MiniJSON;
 
-namespace HUSLTest
+namespace HsluvTest
 {
 	[TestFixture]
 	public class ColorConverterTest
@@ -58,10 +58,10 @@ namespace HUSLTest
 		}
 
 		[Test]
-		public void HUSLTest()
+		public void HsluvTest()
 		{
 			var assembly = Assembly.GetExecutingAssembly();
-			var resourceName = "HUSLTest.Resources.JSONSnapshotRev3.txt";
+			var resourceName = "HsluvTest.Resources.JSONSnapshotRev3.txt";
 
 			using (Stream stream = assembly.GetManifestResourceStream(resourceName))
 			using (StreamReader reader = new StreamReader(stream))
@@ -73,39 +73,39 @@ namespace HUSLTest
 					var expected = pair.Value as Dictionary<string, object>;
 
 					// test forward functions
-					var test_rgb = ColorConverter.HexToRGB(pair.Key);
+					var test_rgb = ColorConverter.HexToRgb(pair.Key);
 					Assert.AreEqual (expected, pair.Value);
 					AssertTuplesClose(test_rgb, Cast(expected["rgb"]));
-					var test_xyz = ColorConverter.RGBToXYZ(test_rgb);
+					var test_xyz = ColorConverter.RgbToXyz(test_rgb);
 					AssertTuplesClose(test_xyz, Cast(expected["xyz"]));
-					var test_luv = ColorConverter.XYZToLUV(test_xyz);
+					var test_luv = ColorConverter.XyzToLuv(test_xyz);
 					AssertTuplesClose(test_luv, Cast(expected["luv"]));
-					var test_lch = ColorConverter.LUVToLCH(test_luv);
+					var test_lch = ColorConverter.LuvToLch(test_luv);
 					AssertTuplesClose(test_lch, Cast(expected["lch"]));
-					var test_husl = ColorConverter.LCHToHUSL(test_lch);
+					var test_husl = ColorConverter.LchToHsluv(test_lch);
 					AssertTuplesClose(test_husl, Cast(expected["husl"]));
-					var test_huslp = ColorConverter.LCHToHUSLP(test_lch);
+					var test_huslp = ColorConverter.LchToHpluv(test_lch);
 					AssertTuplesClose(test_huslp, Cast(expected["huslp"]));
 
 					// test backward functions
-					test_lch = ColorConverter.HUSLToLCH(Cast(expected["husl"]));
+					test_lch = ColorConverter.HsluvToLch(Cast(expected["husl"]));
 					AssertTuplesClose(test_lch, Cast(expected["lch"]));
-					test_lch = ColorConverter.HUSLPToLCH(Cast(expected["huslp"]));
+					test_lch = ColorConverter.HpluvToLch(Cast(expected["huslp"]));
 					AssertTuplesClose(test_lch, Cast(expected["lch"]));
-					test_luv = ColorConverter.LCHToLUV(test_lch);
+					test_luv = ColorConverter.LchToLuv(test_lch);
 					AssertTuplesClose(test_luv, Cast(expected["luv"]));
-					test_xyz = ColorConverter.LUVToXYZ(Cast(expected["luv"]));
+					test_xyz = ColorConverter.LuvToXyz(Cast(expected["luv"]));
 					AssertTuplesClose(test_xyz, Cast(expected["xyz"]));
-					test_rgb = ColorConverter.XYZToRGB(Cast(expected["xyz"]));
+					test_rgb = ColorConverter.XyzToRgb(Cast(expected["xyz"]));
 					AssertTuplesClose(test_rgb, Cast(expected["rgb"]));
-					Assert.AreEqual(ColorConverter.RGBToHex(test_rgb), pair.Key);
+					Assert.AreEqual(ColorConverter.RgbToHex(test_rgb), pair.Key);
 
 					// full test
-					Assert.AreEqual(ColorConverter.HUSLToHex(Cast(expected["husl"])), pair.Key);
-					Assert.AreEqual(ColorConverter.HUSLPToHex(Cast(expected["huslp"])), pair.Key);
+					Assert.AreEqual(ColorConverter.HsluvToHex(Cast(expected["husl"])), pair.Key);
+					Assert.AreEqual(ColorConverter.HpluvToHex(Cast(expected["huslp"])), pair.Key);
 
-					AssertTuplesClose(Cast(expected["husl"]), ColorConverter.HexToHUSL(pair.Key));
-					AssertTuplesClose(Cast(expected["huslp"]), ColorConverter.HexToHUSLP(pair.Key));
+					AssertTuplesClose(Cast(expected["husl"]), ColorConverter.HexToHsluv(pair.Key));
+					AssertTuplesClose(Cast(expected["huslp"]), ColorConverter.HexToHpluv(pair.Key));
 				}
 			}
 		}

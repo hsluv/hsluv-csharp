@@ -9,5 +9,5 @@ RUN mozroots --import --sync
 ADD . /husl
 WORKDIR /husl
 
-RUN xbuild /p:Configuration=Release HUSL.sln
-RUN nunit-console ./HUSLTest/bin/Release/HUSLTest.dll
+RUN xbuild /p:Configuration=Release Hsluv.sln
+RUN nunit-console ./HsluvTest/bin/Release/HsluvTest.dll

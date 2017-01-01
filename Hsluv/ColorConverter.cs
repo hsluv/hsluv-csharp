@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace HUSL
+namespace Hsluv
 {
 	public class ColorConverter
 	{
@@ -159,7 +159,7 @@ namespace HUSL
 			}
 		}
 
-		protected static IList<int> RGBPrepare(IList<double> tuple)
+		protected static IList<int> RgbPrepare(IList<double> tuple)
 		{
 
 			for (int i = 0; i < tuple.Count; ++i)
@@ -187,7 +187,7 @@ namespace HUSL
 			return results;
 		}
 
-		public static IList<double> XYZToRGB(IList<double> tuple) 
+		public static IList<double> XyzToRgb(IList<double> tuple)
 		{
 			return new double[]
 			{
@@ -197,7 +197,7 @@ namespace HUSL
 			};
 		}
 
-		public static IList<double> RGBToXYZ(IList<double> tuple) 
+		public static IList<double> RgbToXyz(IList<double> tuple)
 		{
 			var rgbl = new double[]
 			{
@@ -238,7 +238,7 @@ namespace HUSL
 			}
 		}
 
-		public static IList<double> XYZToLUV(IList<double> tuple) 
+		public static IList<double> XyzToLuv(IList<double> tuple)
 		{
 			double X = tuple[0];
 			double Y = tuple[1];
@@ -260,7 +260,7 @@ namespace HUSL
 			return new Double [] { L, U, V };
 		}
 
-		public static IList<double> LUVToXYZ(IList<double> tuple) 
+		public static IList<double> LuvToXyz(IList<double> tuple)
 		{
 			double L = tuple[0];
 			double U = tuple[1];
@@ -281,7 +281,7 @@ namespace HUSL
 			return new double[] { X, Y, Z };
 		}
 
-		public static IList<double> LUVToLCH(IList<double> tuple) 
+		public static IList<double> LuvToLch(IList<double> tuple)
 		{
 			double L = tuple[0];
 			double U = tuple[1];
@@ -300,7 +300,7 @@ namespace HUSL
 			return new double[] { L, C, H };
 		}
 
-		public static IList<double> LCHToLUV(IList<double> tuple) 
+		public static IList<double> LchToLuv(IList<double> tuple)
 		{
 			double L = tuple[0];
 			double C = tuple[1];
@@ -313,7 +313,7 @@ namespace HUSL
 			return new Double [] { L, U, V };
 		}
 
-		public static IList<double> HUSLToLCH(IList<double> tuple) 
+		public static IList<double> HsluvToLch(IList<double> tuple)
 		{
 			double H = tuple[0];
 			double S = tuple[1]; 
@@ -335,7 +335,7 @@ namespace HUSL
 			return new double[] { L, C, H };
 		}
 
-		public static IList<double> LCHToHUSL(IList<double> tuple) 
+		public static IList<double> LchToHsluv(IList<double> tuple)
 		{
 			double L = tuple[0];
 			double C = tuple[1];
@@ -357,7 +357,7 @@ namespace HUSL
 			return new double[] { H, S, L };
 		}
 
-		public static IList<double> HUSLPToLCH(IList<double> tuple) 
+		public static IList<double> HpluvToLch(IList<double> tuple)
 		{
 			double H = tuple[0];
 			double S = tuple[1]; 
@@ -379,7 +379,7 @@ namespace HUSL
 			return new double[] { L, C, H };
 		}
 
-		public static IList<double> LCHToHUSLP(IList<double> tuple) 
+		public static IList<double> LchToHpluv(IList<double> tuple)
 		{
 			double L = tuple[0];
 			double C = tuple[1];
@@ -401,9 +401,9 @@ namespace HUSL
 			return new double[] { H, S, L };
 		}
 
-		public static string RGBToHex(IList<double> tuple) 
+		public static string RgbToHex(IList<double> tuple)
 		{
-			IList<int> prepared = RGBPrepare(tuple);
+			IList<int> prepared = RgbPrepare(tuple);
 
 			return string.Format("#{0}{1}{2}",
 				prepared[0].ToString("x2"),
@@ -411,7 +411,7 @@ namespace HUSL
 				prepared[2].ToString("x2"));
 		}
 
-		public static IList<double> HexToRGB(string hex) 
+		public static IList<double> HexToRgb(string hex)
 		{
 			return new double[]
 			{
@@ -421,58 +421,58 @@ namespace HUSL
 			};
 		}
 
-		public static IList<double> LCHToRGB(IList<double> tuple)
+		public static IList<double> LchToRgb(IList<double> tuple)
 		{
-			return XYZToRGB(LUVToXYZ(LCHToLUV(tuple)));
+			return XyzToRgb(LuvToXyz(LchToLuv(tuple)));
 		}
 
-		public static IList<double> RGBToLCH(IList<double> tuple)
+		public static IList<double> RgbToLch(IList<double> tuple)
 		{
-			return LUVToLCH(XYZToLUV(RGBToXYZ(tuple)));
+			return LuvToLch(XyzToLuv(RgbToXyz(tuple)));
 		}
 
-		// RGB <--> HUSL(p)
+		// Rgb <--> Hsluv(p)
 
-		public static IList<double> HUSLToRGB(IList<double> tuple)
+		public static IList<double> HsluvToRgb(IList<double> tuple)
 		{
-			return LCHToRGB(HUSLToLCH(tuple));
+			return LchToRgb(HsluvToLch(tuple));
 		}
 
-		public static IList<double> RGBToHUSL(IList<double> tuple)
+		public static IList<double> RgbToHsluv(IList<double> tuple)
 		{
-			return LCHToHUSL(RGBToLCH(tuple));
+			return LchToHsluv(RgbToLch(tuple));
 		}
 
-		public static IList<double> HUSLPToRGB(IList<double> tuple)
+		public static IList<double> HpluvToRgb(IList<double> tuple)
 		{
-			return LCHToRGB(HUSLPToLCH(tuple));
+			return LchToRgb(HpluvToLch(tuple));
 		}
 
-		public static IList<double> RGBToHUSLP(IList<double> tuple)
+		public static IList<double> RgbToHpluv(IList<double> tuple)
 		{
-			return LCHToHUSLP(RGBToLCH(tuple));
+			return LchToHpluv(RgbToLch(tuple));
 		}
 
 		// Hex
 
-		public static string HUSLToHex(IList<double> tuple)
+		public static string HsluvToHex(IList<double> tuple)
 		{
-			return RGBToHex (HUSLToRGB (tuple));
+			return RgbToHex (HsluvToRgb (tuple));
 		}
 
-		public static string HUSLPToHex(IList<double> tuple)
+		public static string HpluvToHex(IList<double> tuple)
 		{
-			return RGBToHex (HUSLPToRGB (tuple));
+			return RgbToHex (HpluvToRgb (tuple));
 		}
 			
-		public static IList<double> HexToHUSL(string s)
+		public static IList<double> HexToHsluv(string s)
 		{
-			return RGBToHUSL (HexToRGB (s));
+			return RgbToHsluv (HexToRgb (s));
 		}
 
-		public static IList<double> HexToHUSLP(string s)
+		public static IList<double> HexToHpluv(string s)
 		{
-			return RGBToHUSLP (HexToRGB (s));
+			return RgbToHpluv (HexToRgb (s));
 		}
 	}
 }

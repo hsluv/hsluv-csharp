@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package>
   <metadata>
-    <id>HUSL</id>
+    <id>Hsluv</id>
     <version>1.0.1</version>
     <authors>Alexei Boronine</authors>
     <owners>Alexei Boronine</owners>
-    <licenseUrl>https://raw.githubusercontent.com/husl-colors/husl.cs/master/LICENSE.txt</licenseUrl>
-    <projectUrl>https://github.com/husl-colors/husl.cs</projectUrl>
+    <licenseUrl>https://raw.githubusercontent.com/hsluv/husl.cs/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/hsluv/husl.cs</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Human-friendly HSL</description>
     <copyright>Copyright 2015</copyright>
-    <tags>Color ColorSpace HSL HUSL CIELUV CIELCh</tags>
+    <tags>Color ColorSpace HSL Hsluv CIELuv CIELCh</tags>
     <references>
-      <reference file="HUSL.dll" />
+      <reference file="Hsluv.dll" />
     </references>
   </metadata>
   <files>
