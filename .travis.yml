@@ -1,9 +1,4 @@
 language: csharp
-solution: Hsluv.sln
-install:
-  - nuget restore Hsluv.sln
-  - nuget install NUnit.Runners -Version 2.6.4 -OutputDirectory testrunner
 script:
-  - xbuild /p:Configuration=Release Hsluv.sln
-  - mono ./testrunner/NUnit.Runners.2.6.4/tools/nunit-console.exe ./HsluvTest/bin/Release/HsluvTest.dll
-
+  - mcs HsluvTest/HsluvConverterTest.cs HsluvTest/MiniJSON.cs Hsluv/Hsluv.cs -resource:HsluvTest/Resources/JsonSnapshotRev3.txt,JsonSnapshotRev3 -main:HsluvTest.HsluvConverterTest
+  - mono ./HsluvTest/HsluvConverterTest.exe

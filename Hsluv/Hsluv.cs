@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Hsluv
 {
-	public class ColorConverter
+	public class HsluvConverter
 	{
 		protected static double[][] M = new double[][]
 		{

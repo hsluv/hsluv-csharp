@@ -2,8 +2,8 @@ bin
 obj
 build
 dist
-testrunner
-TestResult.xml
+*.dll
+*.exe
 *.nupkg
 *.suo
 *.user

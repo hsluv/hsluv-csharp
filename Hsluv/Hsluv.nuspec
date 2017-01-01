@@ -2,11 +2,11 @@
 <package>
   <metadata>
     <id>Hsluv</id>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <authors>Alexei Boronine</authors>
     <owners>Alexei Boronine</owners>
-    <licenseUrl>https://raw.githubusercontent.com/hsluv/husl.cs/master/LICENSE.txt</licenseUrl>
-    <projectUrl>https://github.com/hsluv/husl.cs</projectUrl>
+    <licenseUrl>https://raw.githubusercontent.com/hsluv/hsluv-csharp/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/hsluv/hsluv-csharp</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Human-friendly HSL</description>
     <copyright>Copyright 2015</copyright>
