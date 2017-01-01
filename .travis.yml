@@ -1,4 +1,5 @@
 language: csharp
 script:
+  - stat HsluvTest/Resources/JsonSnapshotRev3.txt
   - mcs HsluvTest/HsluvConverterTest.cs HsluvTest/MiniJSON.cs Hsluv/Hsluv.cs -resource:HsluvTest/Resources/JsonSnapshotRev3.txt,JsonSnapshotRev3 -main:HsluvTest.HsluvConverterTest
   - mono ./HsluvTest/HsluvConverterTest.exe
