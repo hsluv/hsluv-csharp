@@ -8,19 +8,23 @@
 This library provides the `Hsluv` namespace with `HsluvConverter` class with
 the following static methods. Tuples are three items each: R, G, B and H, S, L.
 
-    IList<double> HsluvToRgb(IList<double> tuple)
-	IList<double> RgbToHsluv(IList<double> tuple)
-	IList<double> HpluvToRgb(IList<double> tuple)
-	IList<double> RgbToHpluv(IList<double> tuple)
+```csharp
+double[] HsluvToRgb(double[] tuple)
+double[] RgbToHsluv(double[] tuple)
+double[] HpluvToRgb(double[] tuple)
+double[] RgbToHpluv(double[] tuple)
 
-	string HsluvToHex(IList<double> tuple)
-	string HpluvToHex(IList<double> tuple)
-	IList<double> HexToHsluv(string s)
-	IList<double> HexToHpluv(string s)
+string HsluvToHex(double[] tuple)
+string HpluvToHex(double[] tuple)
+double[] HexToHsluv(string s)
+double[] HexToHpluv(string s)
+```
 
 # Building
 
-    mcs -target:library Hsluv/Hsluv.cs
+```bash
+dotnet build
+```
 
 # Testing
 
@@ -28,9 +32,9 @@ See `.travis.yml`.
 
 # Packaging
 
-    $ cd Hsluv
-    $ vim Hsluv.nuspec
-    $ nuget pack Hsluv.nuspec
+```bash
+dotnet pack -c Release
+```
 
 # Authors
 
