@@ -1,0 +1,13 @@
+name: Compile and test
+
+on:
+  - pull_request
+  - push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: mcs HsluvTest/HsluvConverterTest.cs HsluvTest/MiniJSON.cs Hsluv/Hsluv.cs -resource:HsluvTest/snapshot-rev3.json,JsonSnapshotRev3 -main:HsluvTest.HsluvConverterTest
+      - run: mono ./HsluvTest/HsluvConverterTest.exe

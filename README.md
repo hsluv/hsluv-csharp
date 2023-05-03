@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/hsluv/hsluv-csharp.svg?branch=master)](https://travis-ci.org/hsluv/hsluv-csharp)
+[![Build Status](https://github.com/hsluv/hsluv-csharp/actions/workflows/test.yml/badge.svg)](https://github.com/hsluv/hsluv-csharp/actions/workflows/test.yml)
 [![Package Version](https://img.shields.io/nuget/v/Hsluv.svg)](https://www.nuget.org/packages/Hsluv)
 
 [Explanation, demo, ports etc.](http://www.hsluv.org)
@@ -28,7 +28,7 @@ dotnet build
 
 # Testing
 
-See `.travis.yml`.
+See `.github/workflows/test.yml`.
 
 # Packaging
 
