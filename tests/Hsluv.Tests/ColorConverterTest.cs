@@ -1,6 +1,6 @@
+using System.Text;
 using System.Text.Json;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Hsluv.Tests;
 
@@ -8,13 +8,6 @@ public class ColorConverterTest
 {
     private const double MaxDiff = 0.00000001;
     private const double MaxRelDiff = 0.000000001;
-
-    private readonly ITestOutputHelper _output;
-
-    public ColorConverterTest(ITestOutputHelper output)
-    {
-        _output = output;
-    }
 
     private static bool AssertAlmostEqualRelativeAndAbs(double a, double b)
     {
@@ -47,15 +40,16 @@ public class ColorConverterTest
             }
         }
 
+        var sb = new StringBuilder();
         if (mismatch)
         {
-            _output.WriteLine("MISMATCH {0}", label);
-            _output.WriteLine(" expected: {0}, {1}, {2}", expected[0], expected[1], expected[2]);
-            _output.WriteLine("   actual: {0}, {1}, {2}", actual[0], actual[1], actual[2]);
-            _output.WriteLine("   deltas: {0}, {1}, {2}", deltas[0], deltas[1], deltas[2]);
+            sb.Append($"MISMATCH {label} \n");
+            sb.Append($" expected: {expected[0]:F19}, {expected[1]:F19}, {expected[2]:F19} \n");
+            sb.Append($"   actual: {actual[0]:F19}, {actual[1]:F19}, {actual[2]:F19} \n");
+            sb.Append($"   deltas: {deltas[0]:F19}, {deltas[1]:F19}, {deltas[2]:F19}");
         }
 
-        Assert.False(mismatch);
+        Assert.False(mismatch, sb.ToString());
     }
 
     private static double[] TupleFromJsonArray(JsonElement.ArrayEnumerator array)
