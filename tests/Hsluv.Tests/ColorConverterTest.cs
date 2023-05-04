@@ -1,32 +1,29 @@
 using System.Text;
 using System.Text.Json;
+
 using Xunit;
 
 namespace Hsluv.Tests;
 
 public class ColorConverterTest
 {
-    private const double MaxDiff = 0.00000001;
-    private const double MaxRelDiff = 0.000000001;
-
-    private static bool AssertAlmostEqualRelativeAndAbs(double a, double b)
+    private static bool AssertAlmostEqualRelativeAndAbs(double a, double b, double tolerance)
     {
         // Check if the numbers are really close -- needed
         // when comparing numbers near zero.
         var diff = Math.Abs(a - b);
-        if (diff <= MaxDiff)
-        {
-            return true;
-        }
 
-        a = Math.Abs(a);
-        b = Math.Abs(b);
-        var largest = (b > a) ? b : a;
+        var largest = Math.Max(Math.Abs(a), Math.Abs(b));
 
-        return diff <= largest * MaxRelDiff;
+        return diff <= tolerance || diff <= largest * tolerance;
     }
 
-    private void AssertTuplesClose(string label, double[] expected, double[] actual)
+    private static void AssertTuplesClose(string label, double[] expected, (double, double, double) actual,
+        double tolerance = 0.00000001)
+        => AssertTuplesClose(label, expected, new[] { actual.Item1, actual.Item2, actual.Item3 }, tolerance);
+
+    private static void AssertTuplesClose(string label, double[] expected, double[] actual,
+        double tolerance = 0.00000001)
     {
         var mismatch = false;
         var deltas = new double[expected.Length];
@@ -34,7 +31,7 @@ public class ColorConverterTest
         for (var i = 0; i < expected.Length; ++i)
         {
             deltas[i] = Math.Abs(expected[i] - actual[i]);
-            if (!AssertAlmostEqualRelativeAndAbs(expected[i], actual[i]))
+            if (!AssertAlmostEqualRelativeAndAbs(expected[i], actual[i], tolerance))
             {
                 mismatch = true;
             }
@@ -44,9 +41,9 @@ public class ColorConverterTest
         if (mismatch)
         {
             sb.Append($"MISMATCH {label} \n");
-            sb.Append($" expected: {expected[0]:F19}, {expected[1]:F19}, {expected[2]:F19} \n");
-            sb.Append($"   actual: {actual[0]:F19}, {actual[1]:F19}, {actual[2]:F19} \n");
-            sb.Append($"   deltas: {deltas[0]:F19}, {deltas[1]:F19}, {deltas[2]:F19}");
+            sb.Append($" expected: {expected[0]:F18}, {expected[1]:F18}, {expected[2]:F18} \n");
+            sb.Append($"   actual: {actual[0]:F18}, {actual[1]:F18}, {actual[2]:F18} \n");
+            sb.Append($"   deltas: {deltas[0]:F18}, {deltas[1]:F18}, {deltas[2]:F18}");
         }
 
         Assert.False(mismatch, sb.ToString());

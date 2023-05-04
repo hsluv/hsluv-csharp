@@ -1,414 +1,491 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Globalization;
 
-namespace Hsluv
+namespace Hsluv;
+
+public static class HUSLColorConverter
 {
-    public static class HUSLColorConverter
+    private static readonly double[][] M =
     {
-        private static readonly double[][] M =
+        new[] { 3.2409699419045214, -1.5373831775700935, -0.49861076029300328 },
+        new[] { -0.96924363628087983, 1.8759675015077207, 0.041555057407175613 },
+        new[] { 0.055630079696993609, -0.20397695888897657, 1.0569715142428786 },
+    };
+
+    private static readonly double[][] MInv =
+    {
+        new[] { 0.41239079926595948, 0.35758433938387796, 0.18048078840183429 },
+        new[] { 0.21263900587151036, 0.71516867876775593, 0.072192315360733715 },
+        new[] { 0.019330818715591851, 0.11919477979462599, 0.95053215224966058 },
+    };
+
+    private const double RefU = 0.19783000664283681;
+    private const double RefV = 0.468319994938791;
+
+    private const double Kappa = 903.2962962962963;
+    private const double Epsilon = 0.0088564516790356308;
+
+
+    public static string HsluvToHex(double[] value)
+        => HsluvToHex(value[0], value[1], value[2]);
+    public static string HsluvToHex((double h, double s, double l) value)
+        => HsluvToHex(value.h, value.s, value.l);
+        
+    public static string HsluvToHex(double h, double s, double l)
+        => RgbToHex(HsluvToRgb(h, s, l));
+        
+    public static (double h, double p, double l) HexToHsluv(string hex)
+        => RgbToHsluv(HexToRgb(hex));
+
+    public static string HpluvToHex(double[] value)
+        => HpluvToHex(value[0], value[1], value[2]);
+    public static string HpluvToHex((double h, double s, double l) value)
+        => HpluvToHex(value.h, value.s, value.l);
+    public static string HpluvToHex(double h, double s, double l) 
+        => RgbToHex(XyzToRgb(LuvToXyz(LchToLuv(HpluvToLch(h, s, l)))));
+
+    public static (double h, double s, double l) HexToHpluv(string hex)
+        => LchToHpluv(LuvToLch(XyzToLuv(RgbToXyz(HexToRgb(hex)))));
+
+    public static double[] HsluvToRgb(double[] value)
+    {
+        var (r, g, b) = HsluvToRgb(value[0], value[1], value[2]);
+        return new[] { r, g, b };
+    }
+
+    public static (double r, double g, double b) HsluvToRgb((double h, double s, double l) value)
+        => HsluvToRgb(value.h, value.s, value.l);
+
+    public static (double r, double g, double b) HsluvToRgb(double h, double s, double l)
+        => LchToRgb(HsluvToLch(h, s, l));
+
+    public static double[] LchToRgb(double[] value)
+    {
+        var (r, g, b) = LchToRgb(value[0], value[1], value[2]);
+        return new[] { r, g, b };
+    }
+
+    public static (double r, double g, double b) LchToRgb((double l, double c, double h) value)
+        => LchToRgb(value.l, value.c, value.h);
+
+    public static (double r, double g, double b) LchToRgb(double l, double c, double h)
+        => XyzToRgb(LuvToXyz(LchToLuv(l, c, h)));
+
+    public static double[] RgbToHsluv(double[] value)
+    {
+        var (h, s, l) = RgbToHsluv(value[0], value[1], value[2]);
+        return new[] { h, s, l };
+    }
+
+    public static (double h, double s, double l) RgbToHsluv((double r, double g, double b) value)
+        => RgbToHsluv(value.r, value.g, value.b);
+
+    public static (double h, double s, double l) RgbToHsluv(double r, double g, double b)
+        => LchToHsluv(RgbToLch(r, g, b));
+
+    public static double[] RgbToLch(double[] value)
+    {
+        var (l, c, h) = RgbToLch(value[0], value[1], value[2]);
+        return new[] { l, c, h };
+    }
+
+    public static (double l, double c, double h) RgbToLch((double r, double g, double b) value)
+        => RgbToLch(value.r, value.g, value.b);
+
+    public static (double l, double c, double h) RgbToLch(double r, double g, double b)
+        => LuvToLch(XyzToLuv(RgbToXyz(r, g, b)));
+
+    public static double[] XyzToLuv(double[] value)
+    {
+        var (l, u, v) = XyzToLuv(value[0], value[1], value[2]);
+        return new[] { l, u, v };
+    }
+
+    public static (double l, double u, double v) XyzToLuv((double x, double y, double z) value)
+        => XyzToLuv(value.x, value.y, value.z);
+
+    public static (double l, double u, double v) XyzToLuv(double x, double y, double z)
+    {
+        double l = 0, u = 0, v = 0;
+        if (y == 0)
         {
-            new[] { 3.240969941904521, -1.537383177570093, -0.498610760293 },
-            new[] { -0.96924363628087, 1.87596750150772, 0.041555057407175 },
-            new[] { 0.055630079696993, -0.20397695888897, 1.056971514242878 },
-        };
-
-        private static readonly double[][] MInv =
-        {
-            new[] { 0.41239079926595, 0.35758433938387, 0.18048078840183 },
-            new[] { 0.21263900587151, 0.71516867876775, 0.072192315360733 },
-            new[] { 0.019330818715591, 0.11919477979462, 0.95053215224966 },
-        };
-
-        private const double RefY = 1.0;
-
-        private const double RefU = 0.19783000664283;
-        private const double RefV = 0.46831999493879;
-
-        private const double Kappa = 903.2962962;
-        private const double Epsilon = 0.0088564516;
-
-        private static List<double[]> GetBounds(double l)
-        {
-            var result = new List<double[]>();
-
-            var sub1 = Math.Pow(l + 16, 3) / 1560896;
-            var sub2 = sub1 > Epsilon ? sub1 : l / Kappa;
-
-            for (var c = 0; c < 3; c++)
-            {
-                var m1 = M[c][0];
-                var m2 = M[c][1];
-                var m3 = M[c][2];
-
-                for (var t = 0; t < 2; t++)
-                {
-                    var top1 = (284517 * m1 - 94839 * m3) * sub2;
-                    var top2 = (838422 * m3 + 769860 * m2 + 731718 * m1) * l * sub2 - 769860 * t * l;
-                    var bottom = (632260 * m3 - 126452 * m2) * sub2 + 126452 * t;
-
-                    result.Add(new[] { top1 / bottom, top2 / bottom });
-                }
-            }
-
-            return result;
+            return (l, u, v);
         }
 
-        private static double IntersectLineLine(double[] lineA, double[] lineB)
-            => (lineA[1] - lineB[1]) / (lineB[0] - lineA[0]);
+        l = YToL(y);
+        var varU = (4 * x) / (x + (15 * y) + (3 * z));
+        var varV = (9 * y) / (x + (15 * y) + (3 * z));
+        u = 13 * l * (varU - RefU);
+        v = 13 * l * (varV - RefV);
 
-        private static double DistanceFromPole(double[] point)
-            => Math.Sqrt(Math.Pow(point[0], 2) + Math.Pow(point[1], 2));
+        return (l, u, v);
+    }
 
-        private static bool LengthOfRayUntilIntersect(double theta, double[] line, out double length)
+    public static double[] LuvToXyz(double[] value)
+    {
+        var (x, y, z) = LuvToXyz(value[0], value[1], value[2]);
+        return new[] { x, y, z };
+    }
+
+    public static (double x, double y, double z) LuvToXyz((double l, double u, double v) value)
+        => LuvToXyz(value.l, value.u, value.v);
+
+    public static (double x, double y, double z) LuvToXyz(double l, double u, double v)
+    {
+        double x = 0, y = 0, z = 0;
+        if (l == 0)
         {
-            length = line[1] / (Math.Sin(theta) - line[0] * Math.Cos(theta));
-            return length >= 0;
+            return (x, y, z);
         }
 
-        private static double MaxSafeChromaForL(double l)
+        var varU = u / (13.0 * l) + RefU;
+        var varV = v / (13.0 * l) + RefV;
+
+        y = LToY(l);
+        x = 0.0 - (9.0 * y * varU) / ((varU - 4.0) * varV - varU * varV);
+        z = (9.0 * y - (15.0 * varV * y) - (varV * x)) / (3.0 * varV);
+
+        return (x, y, z);
+    }
+
+    public static double[] LuvToLch(double[] value)
+    {
+        var (l, u, v) = LuvToLch(value[0], value[1], value[2]);
+        return new[] { l, u, v };
+    }
+
+    public static (double l, double c, double h) LuvToLch((double l, double u, double v) value)
+        => LuvToLch(value.l, value.u, value.v);
+
+    public static (double l, double c, double h) LuvToLch(double l, double u, double v)
+    {
+        double hRad, h = 0;
+        var c = Math.Sqrt(Math.Pow(u, 2) + Math.Pow(v, 2));
+        if (c >= 0.00000001)
         {
-            var bounds = GetBounds(l);
-            var min = double.MaxValue;
-
-            for (var i = 0; i < 2; i++)
+            hRad = Math.Atan2(v, u);
+            h = hRad * 360.0 / 2.0 / Math.PI;
+            if (h < 0.0)
             {
-                var m1 = bounds[i][0];
-                var b1 = bounds[i][1];
-                var line = new[] { m1, b1 };
-
-                var x = IntersectLineLine(line, new[] { -1 / m1, 0 });
-                var length = DistanceFromPole(new[] { x, b1 + x * m1 });
-
-                min = Math.Min(min, length);
+                h = 360.0 + h;
             }
-
-            return min;
         }
 
-        private static double MaxChromaForLH(double l, double h)
+        return (l, c, h);
+    }
+
+    public static double[] LchToLuv(double[] value)
+    {
+        var (l, u, v) = LchToLuv(value[0], value[1], value[2]);
+        return new[] { l, u, v };
+    }
+
+    public static (double l, double u, double v) LchToLuv((double l, double c, double h) value)
+        => LchToLuv(value.l, value.c, value.h);
+
+    public static (double l, double u, double v) LchToLuv(double l, double c, double h)
+    {
+        var hRad = h / 360.0 * 2.0 * Math.PI;
+        var u = Math.Cos(hRad) * c;
+        var v = Math.Sin(hRad) * c;
+        return (l, u, v);
+    }
+
+    public static double[] HsluvToLch(double[] value)
+    {
+        var (l, c, h) = HsluvToLch(value[0], value[1], value[2]);
+        return new[] { l, c, h };
+    }
+
+    public static (double l, double c, double h) HsluvToLch((double h, double s, double l) value)
+        => HsluvToLch(value.h, value.s, value.l);
+
+    public static (double l, double c, double h) HsluvToLch(double h, double s, double l)
+    {
+        double c;
+        if (l is > 99.9999999 or < 0.00000001)
         {
-            var hrad = h / 360 * Math.PI * 2;
-
-            var bounds = GetBounds(l);
-            var min = double.MaxValue;
-
-            foreach (var bound in bounds)
-            {
-                if (LengthOfRayUntilIntersect(hrad, bound, out double length))
-                {
-                    min = Math.Min(min, length);
-                }
-            }
-
-            return min;
+            c = 0.0;
+        }
+        else
+        {
+            var max = MaxChromaForLH(l, h);
+            c = max / 100.0 * s;
         }
 
-        private static double DotProduct(double[] a, double[] b)
+        return (l, c, h);
+    }
+
+    public static double[] LchToHsluv(double[] value)
+    {
+        var (h, s, l) = LchToHsluv(value[0], value[1], value[2]);
+        return new[] { h, s, l };
+    }
+
+    public static (double h, double s, double l) LchToHsluv((double l, double c, double h) value)
+        => LchToHsluv(value.l, value.c, value.h);
+
+    public static (double h, double s, double l) LchToHsluv(double l, double c, double h)
+    {
+        double s;
+        if (l is > 99.9999999 or < 0.00000001)
         {
-            var sum = 0.0;
-
-            for (int i = 0; i < a.Length; i++)
-            {
-                sum += (a[i] * b[i]);
-            }
-
-            return sum;
+            s = 0.0;
+        }
+        else
+        {
+            var max = MaxChromaForLH(l, h);
+            s = c / max * 100.0;
         }
 
-        private static double Round(double value, int places)
+        return (h, s, l);
+    }
+
+    public static double[] HpluvToLch(double[] value)
+    {
+        var (l, c, h) = HpluvToLch(value[0], value[1], value[2]);
+        return new[] { l, c, h };
+    }
+
+    public static (double l, double h, double c) HpluvToLch((double h, double s, double l) value)
+        => LchToHpluv(value.h, value.s, value.l);
+
+    public static (double l, double h, double c) HpluvToLch(double h, double s, double l)
+    {
+        double c;
+        if (l is > 99.9999999 or < 0.00000001)
         {
-            var n = Math.Pow(10, places);
-            return Math.Round(value * n) / n;
+            c = 0;
+        }
+        else
+        {
+            var max = MaxSafeChromaForL(l);
+            c = max / 100.0 * s;
         }
 
-        private static double FromLinear(double c)
-        {
-            if (c <= 0.0031308)
-            {
-                return 12.92 * c;
-            }
+        return (l, c, h);
+    }
 
-            return 1.055 * Math.Pow(c, 1 / 2.4) - 0.055;
+    public static double[] LchToHpluv(double[] value)
+    {
+        var (h, s, l) = LchToHpluv(value[0], value[1], value[2]);
+        return new[] { h, s, l };
+    }
+
+    public static (double h, double s, double l) LchToHpluv((double l, double c, double h) value)
+        => LchToHpluv(value.l, value.c, value.h);
+
+    public static (double h, double s, double l) LchToHpluv(double l, double c, double h)
+    {
+        double s;
+        if (l is > 99.9999999 or < 0.00000001)
+        {
+            s = 0;
+        }
+        else
+        {
+            var max = MaxSafeChromaForL(l);
+            s = c / max * 100.0;
         }
 
-        private static double ToLinear(double c)
-        {
-            if (c > 0.04045)
-            {
-                return Math.Pow((c + 0.055) / (1 + 0.055), 2.4);
-            }
+        return (h, s, l);
+    }
 
-            return c / 12.92;
+    public static string RgbToHex(double[] value)
+        => RgbToHex(value[0], value[1], value[2]);
+
+    public static string RgbToHex((double r, double g, double b) value)
+        => RgbToHex(value.r, value.g, value.b);
+
+    public static string RgbToHex(double r, double g, double b)
+    {
+        var rv = Round(Math.Max(0, Math.Min(r, 1)) * 255);
+        var gv = Round(Math.Max(0, Math.Min(g, 1)) * 255);
+        var bv = Round(Math.Max(0, Math.Min(b, 1)) * 255);
+
+        return $"#{rv:x2}{gv:x2}{bv:x2}";
+    }
+
+
+    public static (double r, double g, double b) HexToRgb(string hex)
+    {
+        if (hex.StartsWith("#"))
+        {
+            hex = hex.Substring(1);
         }
 
-        private static int[] RgbPrepare(double[] tuple)
+        var rv = int.Parse(hex.Substring(0, 2), NumberStyles.HexNumber);
+        var gv = int.Parse(hex.Substring(2, 2), NumberStyles.HexNumber);
+        var bv = int.Parse(hex.Substring(4, 2), NumberStyles.HexNumber);
+        return (rv / 255.0, gv / 255.0, bv / 255.0);
+    }
+
+    public static double[] XyzToRgb(double[] value)
+    {
+        var (r, g, b) = XyzToRgb(value[0], value[1], value[2]);
+        return new[] { r, g, b };
+    }
+
+    public static (double r, double g, double b) XyzToRgb((double x, double y, double z) value)
+        => XyzToRgb(value.x, value.y, value.z);
+
+    public static (double r, double g, double b) XyzToRgb(double x, double y, double z)
+    {
+        var r = FromLinear(DotProduct(M[0], new[] { x, y, z }));
+        var g = FromLinear(DotProduct(M[1], new[] { x, y, z }));
+        var b = FromLinear(DotProduct(M[2], new[] { x, y, z }));
+        return (r, g, b);
+    }
+
+    public static double[] RgbToXyz(double[] value)
+    {
+        var (x, y, z) = RgbToXyz(value[0], value[1], value[2]);
+        return new[] { x, y, z };
+    }
+
+    public static (double x, double y, double z) RgbToXyz((double r, double g, double b) value)
+        => RgbToXyz(value.r, value.g, value.b);
+
+    public static (double x, double y, double z) RgbToXyz(double r, double g, double b)
+    {
+        r = ToLine(r);
+        g = ToLine(g);
+        b = ToLine(b);
+        var x = DotProduct(MInv[0], new[] { r, g, b });
+        var y = DotProduct(MInv[1], new[] { r, g, b });
+        var z = DotProduct(MInv[2], new[] { r, g, b });
+        return (x, y, z);
+    }
+
+    private static double FromLinear(double c)
+    {
+        if (c <= 0.0031308)
         {
-            for (var i = 0; i < tuple.Length; i++)
-            {
-                tuple[i] = Round(tuple[i], 3);
-            }
-
-            for (var i = 0; i < tuple.Length; i++)
-            {
-                var ch = tuple[i];
-                if (ch < -0.0001 || ch > 1.0001)
-                {
-                    throw new ArgumentException("Illegal rgb value: " + ch, nameof(tuple));
-                }
-            }
-
-            var results = new int[tuple.Length];
-
-            for (var i = 0; i < tuple.Length; ++i)
-            {
-                results[i] = (int)Math.Round(tuple[i] * 255);
-            }
-
-            return results;
+            return 12.92 * c;
         }
 
-        public static double[] XyzToRgb(double[] tuple) => new[]
-        {
-            FromLinear(DotProduct(M[0], tuple)), 
-            FromLinear(DotProduct(M[1], tuple)),
-            FromLinear(DotProduct(M[2], tuple)),
-        };
+        return 1.055 * Math.Pow(c, 1.0 / 2.4) - 0.055;
+    }
 
-        public static double[] RgbToXyz(double[] tuple)
+    private static double ToLine(double c)
+    {
+        const double a = 0.055;
+        if (c > 0.04045)
         {
-            var rgbl = new[] { ToLinear(tuple[0]), ToLinear(tuple[1]), ToLinear(tuple[2]), };
-            return new[] { DotProduct(MInv[0], rgbl), DotProduct(MInv[1], rgbl), DotProduct(MInv[2], rgbl) };
+            return Math.Pow((c + a) / (1.0 + a), 2.4);
         }
 
-        private static double YToL(double y)
-        {
-            if (y <= Epsilon)
-            {
-                return (y / RefY) * Kappa;
-            }
+        return c / 12.92;
+    }
 
-            return 116 * Math.Pow(y / RefY, 1.0 / 3.0) - 16;
+    private static double YToL(double y)
+    {
+        if (y <= Epsilon)
+        {
+            return y * Kappa;
         }
 
-        private static double LToY(double l)
-        {
-            if (l <= 8)
-            {
-                return RefY * l / Kappa;
-            }
+        return 116.0 * Math.Pow(y, 1.0 / 3.0) - 16.0;
+    }
 
-            return RefY * Math.Pow((l + 16) / 116, 3);
+    private static double LToY(double l)
+    {
+        if (l <= 8)
+        {
+            return l / Kappa;
         }
 
-        public static double[] XyzToLuv(double[] tuple)
+        return Math.Pow((l + 16) / 116, 3);
+    }
+
+    private static double MaxSafeChromaForL(double l)
+    {
+        var minLength = double.MaxValue;
+        var lines = GetBounds(l);
+        for (var i = 0; i < lines.Length; i++)
         {
-            var X = tuple[0];
-            var Y = tuple[1];
-            var Z = tuple[2];
-
-            var varU = (4 * X) / (X + (15 * Y) + (3 * Z));
-            var varV = (9 * Y) / (X + (15 * Y) + (3 * Z));
-
-            var L = YToL(Y);
-
-            if (L == 0)
-            {
-                return new double[] { 0, 0, 0 };
-            }
-
-            var U = 13 * L * (varU - RefU);
-            var V = 13 * L * (varV - RefV);
-
-            return new[] { L, U, V };
+            var (m1, b1) = lines[i];
+            var x = IntersectLineLine(m1, b1, -1.0 / m1, 0.0);
+            var dist = DistanceFromPole(x, b1 + x * m1);
+            minLength = Math.Min(minLength, dist);
         }
 
-        public static double[] LuvToXyz(double[] tuple)
+        return minLength;
+    }
+
+    private static double MaxChromaForLH(double l, double h)
+    {
+        var hRad = h / 360.0 * Math.PI * 2.0;
+        var minLength = double.MaxValue;
+
+        var lines = GetBounds(l);
+        for (var i = 0; i < lines.Length; i++)
         {
-            var L = tuple[0];
-            var U = tuple[1];
-            var V = tuple[2];
-
-            if (L == 0)
+            var line = lines[i];
+            var length = LengthOfRayUntilIntersect(hRad, line.Item1, line.Item2);
+            if (length > 0.0)
             {
-                return new double[] { 0, 0, 0 };
+                minLength = Math.Min(minLength, length);
             }
-
-            var varU = U / (13 * L) + RefU;
-            var varV = V / (13 * L) + RefV;
-
-            var Y = LToY(L);
-            var X = 0 - (9 * Y * varU) / ((varU - 4) * varV - varU * varV);
-            var Z = (9 * Y - (15 * varV * Y) - (varV * X)) / (3 * varV);
-
-            return new[] { X, Y, Z };
         }
 
-        public static double[] LuvToLch(double[] tuple)
+        return minLength;
+    }
+
+    private static (double, double)[] GetBounds(double l)
+    {
+        var ret = new (double, double)[6];
+
+        var sub1 = Math.Pow(l + 16, 3) / 1560896.0;
+
+        var sub2 = sub1;
+        if (sub1 <= Epsilon)
         {
-            var L = tuple[0];
-            var U = tuple[1];
-            var V = tuple[2];
-
-
-            var C = Math.Sqrt(U * U + V * V);
-            double H;
-
-            if (C < 0.00000001)
-            {
-                H = 0.0;
-            }
-            else
-            {
-                var Hrad = Math.Atan2(V, U);
-                H = Hrad * 180.0 / Math.PI;
-
-                if (H < 0)
-                {
-                    H = 360 + H;
-                }
-            }
-
-            return new[] { L, C, H };
+            sub2 = l / Kappa;
         }
 
-        public static double[] LchToLuv(double[] tuple)
+        for (var i = 0; i < M.Length; i++)
         {
-            var L = tuple[0];
-            var C = tuple[1];
-            var H = tuple[2];
-
-            var Hrad = H / 360.0 * 2 * Math.PI;
-            var U = Math.Cos(Hrad) * C;
-            var V = Math.Sin(Hrad) * C;
-
-            return new[] { L, U, V };
+            for (var k = 0; k < 2; k++)
+            {
+                var top1 = (284517.0 * M[i][0] - 94839.0 * M[i][2]) * sub2;
+                var top2 = (838422.0 * M[i][2] + 769860.0 * M[i][1] + 731718.0 * M[i][0]) * l * sub2 -
+                           769860.0 * k * l;
+                var bottom = (632260.0 * M[i][2] - 126452.0 * M[i][1]) * sub2 + 126452.0 * k;
+                ret[i * 2 + k] = (top1 / bottom, top2 / bottom);
+            }
         }
 
-        public static double[] HsluvToLch(double[] tuple)
+        return ret;
+    }
+
+    private static double IntersectLineLine(double x1, double y1, double x2, double y2)
+        => (y1 - y2) / (x2 - x1);
+
+    private static double DistanceFromPole(double x, double y)
+        => Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
+
+    private static double LengthOfRayUntilIntersect(double theta, double x, double y)
+        => y / (Math.Sin(theta) - x * Math.Cos(theta));
+
+    private static double DotProduct(double[] a, double[] b)
+    {
+        var sum = 0.0;
+        for (var i = 0; i < a.Length; i++)
         {
-            var H = tuple[0];
-            var S = tuple[1];
-            var L = tuple[2];
-
-            if (L > 99.9999999)
-            {
-                return new[] { 100, 0, H };
-            }
-
-            if (L < 0.00000001)
-            {
-                return new[] { 0, 0, H };
-            }
-
-            var max = MaxChromaForLH(L, H);
-            var C = max / 100 * S;
-
-            return new[] { L, C, H };
+            sum += a[i] * b[i];
         }
 
-        public static double[] LchToHsluv(double[] tuple)
+        return sum;
+    }
+
+    private static int Round(double f)
+    {
+        if (Math.Abs(f) < 0.5)
         {
-            var L = tuple[0];
-            var C = tuple[1];
-            var H = tuple[2];
-
-            if (L > 99.9999999)
-            {
-                return new[] { H, 100, 0 };
-            }
-
-            if (L < 0.00000001)
-            {
-                return new[] { H, 0, 0 };
-            }
-
-            var max = MaxChromaForLH(L, H);
-            var S = C / max * 100;
-
-            return new[] { H, S, L };
+            return 0;
         }
 
-        public static double[] HpluvToLch(double[] tuple)
-        {
-            var H = tuple[0];
-            var S = tuple[1];
-            var L = tuple[2];
-
-            if (L > 99.9999999)
-            {
-                return new[] { 100, 0, H };
-            }
-
-            if (L < 0.00000001)
-            {
-                return new[] { 0, 0, H };
-            }
-
-            var max = MaxSafeChromaForL(L);
-            var C = max / 100 * S;
-
-            return new[] { L, C, H };
-        }
-
-        public static double[] LchToHpluv(double[] tuple)
-        {
-            var L = tuple[0];
-            var C = tuple[1];
-            var H = tuple[2];
-
-            if (L > 99.9999999)
-            {
-                return new[] { H, 0, 100 };
-            }
-
-            if (L < 0.00000001)
-            {
-                return new[] { H, 0, 0 };
-            }
-
-            var max = MaxSafeChromaForL(L);
-            var S = C / max * 100;
-
-            return new[] { H, S, L };
-        }
-
-        public static string RgbToHex(double[] tuple)
-        {
-            var prepared = RgbPrepare(tuple);
-            return $"#{prepared[0]:x2}{prepared[1]:x2}{prepared[2]:x2}";
-        }
-
-        public static double[] HexToRgb(string hex) => new[]
-        {
-            int.Parse(hex.Substring(1, 2), System.Globalization.NumberStyles.HexNumber) / 255.0,
-            int.Parse(hex.Substring(3, 2), System.Globalization.NumberStyles.HexNumber) / 255.0,
-            int.Parse(hex.Substring(5, 2), System.Globalization.NumberStyles.HexNumber) / 255.0,
-        };
-
-        public static double[] LchToRgb(double[] tuple)
-            => XyzToRgb(LuvToXyz(LchToLuv(tuple)));
-
-        public static double[] RgbToLch(double[] tuple)
-            => LuvToLch(XyzToLuv(RgbToXyz(tuple)));
-
-        // Rgb <--> Hsluv(p)
-
-        public static double[] HsluvToRgb(double[] tuple) => LchToRgb(HsluvToLch(tuple));
-
-        public static double[] RgbToHsluv(double[] tuple) => LchToHsluv(RgbToLch(tuple));
-
-        public static double[] HpluvToRgb(double[] tuple) => LchToRgb(HpluvToLch(tuple));
-
-        public static double[] RgbToHpluv(double[] tuple) => LchToHpluv(RgbToLch(tuple));
-
-        // Hex
-
-        public static string HsluvToHex(double[] tuple) => RgbToHex(HsluvToRgb(tuple));
-
-        public static string HpluvToHex(double[] tuple) => RgbToHex(HpluvToRgb(tuple));
-
-        public static double[] HexToHsluv(string s) => RgbToHsluv(HexToRgb(s));
-
-        public static double[] HexToHpluv(string s) => RgbToHpluv(HexToRgb(s));
+        return (int)(f + Math.CopySign(0.5, f));
     }
 }
