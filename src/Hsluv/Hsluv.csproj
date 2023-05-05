@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
         <Description>Human-friendly HSL</Description>
         <Copyright>Copyright 2016</Copyright>
         <PackageTags>Color ColorSpace HSL Hsluv CIELuv CIELCh</PackageTags>

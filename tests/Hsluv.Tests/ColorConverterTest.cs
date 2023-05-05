@@ -67,7 +67,7 @@ public class ColorConverterTest
         await using var fs = File.Open("snapshot-rev4.json", FileMode.Open);
         var doc = await JsonSerializer.DeserializeAsync<JsonDocument>(fs);
 
-        foreach (var property in doc.RootElement.EnumerateObject())
+        foreach (var property in doc!.RootElement.EnumerateObject())
         {
             var hex = property.Name;
             var expected = property.Value.EnumerateObject().ToList();
