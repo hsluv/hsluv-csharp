@@ -1,4 +1,3 @@
 language: csharp
 script:
-  - mcs HsluvTest/HsluvConverterTest.cs HsluvTest/MiniJSON.cs Hsluv/Hsluv.cs -resource:HsluvTest/snapshot-rev3.json,JsonSnapshotRev3 -main:HsluvTest.HsluvConverterTest
-  - mono ./HsluvTest/HsluvConverterTest.exe
+  - dotnet test -c Release
