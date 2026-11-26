@@ -14,9 +14,9 @@
 
     <PackageId>Hsluv</PackageId>
     <Version>2.0.0</Version>
-    <Authors>Alexei Boronine</Authors>
+    <Authors>Alexei Boronine, Mark Wonnacott</Authors>
     <Description>Human-friendly HSL</Description>
-    <Copyright>Copyright (c) 2015-2026 Alexei Boronine</Copyright>
+    <Copyright>Copyright (c) 2015-2026 Alexei Boronine, Copyright (c) 2015 Mark Wonnacott</Copyright>
     <PackageTags>Color ColorSpace HSL Hsluv CIELuv CIELCh</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://www.hsluv.org</PackageProjectUrl>
