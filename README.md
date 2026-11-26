@@ -53,19 +53,57 @@ conv.HsluvToHex();
 Console.WriteLine(conv.hex); // Will print "#ec7d82"
 ```
 
-# Building
+# Supported platforms
 
-    mcs -target:library Hsluv/Hsluv.cs
+The NuGet package ships two builds of the library:
 
-# Testing
+- `netstandard2.0`: .NET Core 2.0+, .NET 5+, .NET Framework 4.6.1+, Mono 5.4+, Unity, Xamarin
+- `net40`: .NET Framework 4.0+
 
-See `.github/workflows/test.yml`.
+The library is plain C# 7.3 with no dependencies, so `Hsluv/Hsluv.cs` can also be copied into any project directly.
+
+# Building and testing
+
+Requires the [.NET SDK](https://dotnet.microsoft.com/download) (8.0 and 10.0 to run all test targets).
+
+    dotnet build -c Release
+    dotnet run -c Release --project HsluvTest -f net8.0
+    dotnet run -c Release --project HsluvTest -f net10.0
+    dotnet run -c Release --project HsluvTest -f net48   # Windows, or Mono elsewhere
+
+CI also compiles the sources with Mono's `mcs`, see `.github/workflows/test.yml`.
 
 # Packaging
 
-    $ cd Hsluv
-    $ vim Hsluv.nuspec
-    $ nuget pack Hsluv.nuspec
+To build the package locally:
+
+    dotnet pack Hsluv -c Release -o dist
+
+# Releasing
+
+Releases are published to [NuGet](https://www.nuget.org/packages/Hsluv) by the
+[`release.yml`](.github/workflows/release.yml) workflow, triggered by a `v*` tag. It uses
+[NuGet trusted publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing),
+so no long-lived API key is stored in GitHub.
+
+One-time setup:
+
+1. On nuget.org, sign in as the package owner, open **Trusted Publishing** and add a policy:
+   - Repository Owner: `hsluv`
+   - Repository: `hsluv-csharp`
+   - Workflow File: `release.yml`
+   - Environment: `release`
+2. Store the nuget.org username (profile name, not email) of the policy owner as a repo secret:
+
+   ```bash
+   gh secret set NUGET_USER --repo hsluv/hsluv-csharp --body "<nuget.org username>"
+   ```
+
+Then bump `<Version>` in `Hsluv/Hsluv.csproj` and create a release:
+
+```bash
+gh release create v2.0.0 --generate-notes
+```
 
 # Authors
 
