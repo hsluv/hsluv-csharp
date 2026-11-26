@@ -75,9 +75,35 @@ CI also compiles the sources with Mono's `mcs`, see `.github/workflows/test.yml`
 
 # Packaging
 
-Bump `<Version>` in `Hsluv/Hsluv.csproj`, then:
+To build the package locally:
 
     dotnet pack Hsluv -c Release -o dist
+
+# Releasing
+
+Releases are published to [NuGet](https://www.nuget.org/packages/Hsluv) by the
+[`release.yml`](.github/workflows/release.yml) workflow, triggered by a `v*` tag. It uses
+[NuGet trusted publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing),
+so no long-lived API key is stored in GitHub.
+
+One-time setup:
+
+1. On nuget.org, sign in as the package owner, open **Trusted Publishing** and add a policy:
+   - Repository Owner: `hsluv`
+   - Repository: `hsluv-csharp`
+   - Workflow File: `release.yml`
+   - Environment: `release`
+2. Store the nuget.org username (profile name, not email) of the policy owner as a repo secret:
+
+   ```bash
+   gh secret set NUGET_USER --repo hsluv/hsluv-csharp --body "<nuget.org username>"
+   ```
+
+Then bump `<Version>` in `Hsluv/Hsluv.csproj` and create a release:
+
+```bash
+gh release create v2.0.0 --generate-notes
+```
 
 # Authors
 

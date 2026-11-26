@@ -1,0 +1,54 @@
+name: Release to NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # Required for NuGet trusted publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Verify tag matches project version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PROJECT_VERSION="$(dotnet msbuild Hsluv/Hsluv.csproj -getProperty:Version)"
+          if [ "$TAG_VERSION" != "$PROJECT_VERSION" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match project version ${PROJECT_VERSION}"
+            exit 1
+          fi
+          echo "Tag and project version match: ${PROJECT_VERSION}"
+
+      - run: dotnet build -c Release
+      - run: dotnet run -c Release --no-build --project HsluvTest -f net8.0
+      - run: dotnet run -c Release --no-build --project HsluvTest -f net10.0
+      - run: dotnet pack Hsluv -c Release --no-build -o dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: dist/*.nupkg
+
+      # Exchange the GitHub OIDC token for a short-lived NuGet API key
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: NuGet push
+        run: dotnet nuget push "dist/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
