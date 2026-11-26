@@ -7,7 +7,38 @@ on:
   pull_request:
 
 jobs:
-  build:
+  dotnet:
+    name: dotnet (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Linux runs net8.0 and net10.0 (netstandard2.0 build). Windows also runs
+        # net48 on the real .NET Framework (net40 build).
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - run: dotnet build -c Release
+      - run: dotnet run -c Release --no-build --project HsluvTest -f net8.0
+      - run: dotnet run -c Release --no-build --project HsluvTest -f net10.0
+      - if: runner.os == 'Windows'
+        run: dotnet run -c Release --no-build --project HsluvTest -f net48
+      - if: runner.os == 'Linux'
+        run: dotnet pack Hsluv -c Release -o dist
+      - if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: dist/*.nupkg
+
+  mono:
+    # Compiles the library with Mono's mcs, which only supports older C#.
+    # Guards against accidentally using newer language features.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,5 +46,5 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y mono-mcs
-      - run: mcs HsluvTest/HsluvConverterTest.cs HsluvTest/MiniJSON.cs Hsluv/Hsluv.cs -resource:HsluvTest/snapshot-rev4.json,JsonSnapshotRev4 -main:HsluvTest.HsluvConverterTest
-      - run: mono ./HsluvTest/HsluvConverterTest.exe
+      - run: mcs HsluvTest/HsluvConverterTest.cs HsluvTest/MiniJSON.cs Hsluv/Hsluv.cs -resource:HsluvTest/snapshot-rev4.json,JsonSnapshotRev4 -main:HsluvTest.HsluvConverterTest -out:HsluvTest.exe
+      - run: mono HsluvTest.exe

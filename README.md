@@ -53,19 +53,31 @@ conv.HsluvToHex();
 Console.WriteLine(conv.hex); // Will print "#ec7d82"
 ```
 
-# Building
+# Supported platforms
 
-    mcs -target:library Hsluv/Hsluv.cs
+The NuGet package ships two builds of the library:
 
-# Testing
+- `netstandard2.0`: .NET Core 2.0+, .NET 5+, .NET Framework 4.6.1+, Mono 5.4+, Unity, Xamarin
+- `net40`: .NET Framework 4.0+
 
-See `.github/workflows/test.yml`.
+The library is plain C# 7.3 with no dependencies, so `Hsluv/Hsluv.cs` can also be copied into any project directly.
+
+# Building and testing
+
+Requires the [.NET SDK](https://dotnet.microsoft.com/download) (8.0 and 10.0 to run all test targets).
+
+    dotnet build -c Release
+    dotnet run -c Release --project HsluvTest -f net8.0
+    dotnet run -c Release --project HsluvTest -f net10.0
+    dotnet run -c Release --project HsluvTest -f net48   # Windows, or Mono elsewhere
+
+CI also compiles the sources with Mono's `mcs`, see `.github/workflows/test.yml`.
 
 # Packaging
 
-    $ cd Hsluv
-    $ vim Hsluv.nuspec
-    $ nuget pack Hsluv.nuspec
+Bump `<Version>` in `Hsluv/Hsluv.csproj`, then:
+
+    dotnet pack Hsluv -c Release -o dist
 
 # Authors
 
