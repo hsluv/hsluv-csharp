@@ -94,6 +94,7 @@ One-time setup:
    - Repository: `hsluv-csharp`
    - Workflow File: `release.yml`
    - Environment: `release`
+   - Scopes: select the `Hsluv` package (or use glob pattern `Hsluv`)
 2. Store the nuget.org username (profile name, not email) of the policy owner as a repo secret:
 
    ```bash
