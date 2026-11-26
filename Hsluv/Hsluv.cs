@@ -1,479 +1,542 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Hsluv
 {
+	/// <summary>
+	/// Human-friendly HSL conversion utility class.
+	///
+	/// This is a port of the HSLuv reference implementation (revision 4):
+	/// https://github.com/hsluv/hsluv-haxe
+	///
+	/// The math for most of this module was taken from:
+	///
+	/// * http://www.easyrgb.com
+	/// * http://www.brucelindbloom.com
+	/// * Wikipedia
+	///
+	/// All numbers below taken from math/bounds.wxm wxMaxima file. We use 17
+	/// digits of decimal precision to export the numbers, effectively exporting
+	/// them as double precision IEEE 754 floats.
+	///
+	/// "If an IEEE 754 double precision is converted to a decimal string with at
+	/// least 17 significant digits and then converted back to double, then the
+	/// final number must match the original"
+	///
+	/// Source: https://en.wikipedia.org/wiki/Double-precision_floating-point_format
+	///
+	/// This class is designed to avoid heap allocation.
+	/// </summary>
 	public class HsluvConverter
 	{
-		protected static double[][] M = new double[][]
-		{
-			new double[] {  3.240969941904521, -1.537383177570093, -0.498610760293    },
-			new double[] { -0.96924363628087,   1.87596750150772,   0.041555057407175 },
-			new double[] {  0.055630079696993, -0.20397695888897,   1.056971514242878 },
-		};
+		// RGB
+		public string hex;
+		public double rgb_r;
+		public double rgb_g;
+		public double rgb_b;
 
-		protected static double[][] MInv = new double[][]
-		{
-			new double[] { 0.41239079926595,  0.35758433938387, 0.18048078840183  },
-			new double[] { 0.21263900587151,  0.71516867876775, 0.072192315360733 },
-			new double[] { 0.019330818715591, 0.11919477979462, 0.95053215224966  },
-		};
+		// CIE XYZ
+		public double xyz_x;
+		public double xyz_y;
+		public double xyz_z;
 
-		protected static double RefX = 0.95045592705167;
-		protected static double RefY = 1.0;
-		protected static double RefZ = 1.089057750759878;
+		// CIE LUV
+		public double luv_l;
+		public double luv_u;
+		public double luv_v;
 
-		protected static double RefU = 0.19783000664283;
-		protected static double RefV = 0.46831999493879;
+		// CIE LUV LCh
+		public double lch_l;
+		public double lch_c;
+		public double lch_h;
 
-		protected static double Kappa   = 903.2962962;
-		protected static double Epsilon = 0.0088564516;
+		// HSLuv
+		public double hsluv_h;
+		public double hsluv_s;
+		public double hsluv_l;
 
-		protected static IList<double[]> GetBounds(double L)
-		{
-			var result = new List<double[]>();
+		// HPLuv
+		public double hpluv_h;
+		public double hpluv_p;
+		public double hpluv_l;
 
-			double sub1 = Math.Pow(L + 16, 3) / 1560896;
-			double sub2 = sub1 > Epsilon ? sub1 : L / Kappa;
+		// 6 lines in slope-intercept format: R < 0, R > 1, G < 0, G > 1, B < 0, B > 1
+		public double r0s;
+		public double r0i;
+		public double r1s;
+		public double r1i;
 
-			for (int c = 0; c < 3; ++c)
-			{
-				var m1 = M[c][0];
-				var m2 = M[c][1]; 
-				var m3 = M[c][2];
+		public double g0s;
+		public double g0i;
+		public double g1s;
+		public double g1i;
 
-				for (int t = 0; t < 2; ++t)
-				{
-					var top1 = (284517 * m1 - 94839 * m3) * sub2;
-					var top2 = (838422 * m3 + 769860 * m2 + 731718 * m1) * L * sub2 - 769860 * t * L;
-					var bottom = (632260 * m3 - 126452 * m2) * sub2 + 126452 * t;
+		public double b0s;
+		public double b0i;
+		public double b1s;
+		public double b1i;
 
-					result.Add(new double[] { top1 / bottom, top2 / bottom });
-				}
-			}
+		private const string hexChars = "0123456789abcdef";
 
-			return result;
-		}
+		private const double refY = 1.0;
 
-		protected static double IntersectLineLine(IList<double> lineA,
-			IList<double> lineB)
-		{
-			return (lineA[1] - lineB[1]) / (lineB[0] - lineA[0]);
-		}
+		private const double refU = 0.19783000664283;
+		private const double refV = 0.46831999493879;
 
-		protected static double DistanceFromPole(IList<double> point)
-		{
-			return Math.Sqrt(Math.Pow(point[0], 2) + Math.Pow(point[1], 2));
-		}
+		// CIE LUV constants
+		private const double kappa = 903.2962962;
+		private const double epsilon = 0.0088564516;
 
-		protected static bool LengthOfRayUntilIntersect(double theta, 
-			IList<double> line,
-			out double length)
-		{
-			length = line[1] / (Math.Sin(theta) - line[0] * Math.Cos(theta));
+		// Transformation matrix
+		private const double m_r0 = 3.240969941904521;
+		private const double m_r1 = -1.537383177570093;
+		private const double m_r2 = -0.498610760293;
 
-			return length >= 0;
-		}
+		private const double m_g0 = -0.96924363628087;
+		private const double m_g1 = 1.87596750150772;
+		private const double m_g2 = 0.041555057407175;
 
-		protected static double MaxSafeChromaForL(double L) 
-		{
-			var bounds = GetBounds(L);
-			double min = Double.MaxValue;
+		private const double m_b0 = 0.055630079696993;
+		private const double m_b1 = -0.20397695888897;
+		private const double m_b2 = 1.056971514242878;
 
-			for (int i = 0; i < 2; ++i)
-			{
-				var m1 = bounds[i][0]; 
-				var b1 = bounds[i][1];
-				var line = new double[] { m1, b1 };
-
-				double x = IntersectLineLine(line, new double[] {-1 / m1, 0 });
-				double length = DistanceFromPole(new double[] { x, b1 + x * m1 });
-
-				min = Math.Min(min, length);
-			}
-
-			return min;
-		}
-
-		protected static double MaxChromaForLH(double L, double H) 
-		{
-			double hrad = H / 360 * Math.PI * 2;
-
-			var bounds = GetBounds(L);
-			double min = Double.MaxValue;
-
-			foreach (var bound in bounds)
-			{
-				double length;
-
-				if (LengthOfRayUntilIntersect(hrad, bound, out length))
-				{
-					min = Math.Min(min, length);
-				}
-			}
-
-			return min;
-		}
-
-		protected static double DotProduct(IList<double> a, 
-			IList<double> b) 
-		{
-			double sum = 0;
-
-			for (int i = 0; i < a.Count; ++i)
-			{
-				sum += a[i] * b[i];
-			}
-
-			return sum;
-		}
-
-		protected static double Round(double value, int places) 
-		{
-			double n = Math.Pow(10, places);
-
-			return Math.Round(value * n) / n;
-		}
-
-		protected static double FromLinear(double c) 
+		// Used for rgb conversions
+		private static double FromLinear(double c)
 		{
 			if (c <= 0.0031308)
 			{
 				return 12.92 * c;
 			}
-			else 
+			else
 			{
 				return 1.055 * Math.Pow(c, 1 / 2.4) - 0.055;
 			}
 		}
 
-		protected static double ToLinear(double c) 
+		private static double ToLinear(double c)
 		{
 			if (c > 0.04045)
 			{
 				return Math.Pow((c + 0.055) / (1 + 0.055), 2.4);
-			} 
+			}
 			else
 			{
 				return c / 12.92;
 			}
 		}
 
-		protected static IList<int> RgbPrepare(IList<double> tuple)
+		// http://en.wikipedia.org/wiki/CIELUV
+		// In these formulas, Yn refers to the reference white point. We are using
+		// illuminant D65, so Yn (see refY in Maxima file) equals 1. The formula is
+		// simplified accordingly.
+		public static double YToL(double Y)
 		{
-
-			for (int i = 0; i < tuple.Count; ++i)
+			if (Y <= epsilon)
 			{
-				tuple[i] = Round(tuple[i], 3);
+				return (Y / refY) * kappa;
 			}
-
-			for (int i = 0; i < tuple.Count; ++i) 
-			{
-				double ch = tuple[i];
-
-				if (ch < -0.0001 || ch > 1.0001) 
-				{
-					throw new System.Exception("Illegal rgb value: " + ch);
-				}
-			}
-
-			var results = new int[tuple.Count];
-
-			for (int i = 0; i < tuple.Count; ++i) 
-			{
-				results[i] = (int) Math.Round(tuple[i] * 255);
-			}
-
-			return results;
-		}
-
-		public static IList<double> XyzToRgb(IList<double> tuple)
-		{
-			return new double[]
-			{
-				FromLinear(DotProduct(M[0], tuple)),
-				FromLinear(DotProduct(M[1], tuple)),
-				FromLinear(DotProduct(M[2], tuple)),
-			};
-		}
-
-		public static IList<double> RgbToXyz(IList<double> tuple)
-		{
-			var rgbl = new double[]
-			{
-				ToLinear(tuple[0]),
-				ToLinear(tuple[1]),
-				ToLinear(tuple[2]),
-			};
-
-			return new double[]
-			{
-				DotProduct(MInv[0], rgbl),
-				DotProduct(MInv[1], rgbl),
-				DotProduct(MInv[2], rgbl),
-			};
-		}
-
-		protected static double YToL(double Y) 
-		{
-			if (Y <= Epsilon)
-			{
-				return (Y / RefY) * Kappa;
-			} 
 			else
 			{
-				return 116 * Math.Pow(Y / RefY, 1.0 / 3.0) - 16;
+				return 116 * Math.Pow(Y / refY, 1.0 / 3.0) - 16;
 			}
 		}
 
-		protected static double LToY(double L) 
+		public static double LToY(double L)
 		{
-			if (L <= 8) 
+			if (L <= 8)
 			{
-				return RefY * L / Kappa;
-			} 
-			else 
+				return refY * L / kappa;
+			}
+			else
 			{
-				return RefY * Math.Pow((L + 16) / 116, 3);
+				return refY * Math.Pow((L + 16) / 116, 3);
 			}
 		}
 
-		public static IList<double> XyzToLuv(IList<double> tuple)
+		private static string RgbChannelToHex(double chan)
 		{
-			double X = tuple[0];
-			double Y = tuple[1];
-			double Z = tuple[2];
+			// Equivalent of Haxe's Math.round (round half up)
+			int c = (int)Math.Floor(chan * 255 + 0.5);
+			int digit2 = c % 16;
+			int digit1 = (c - digit2) / 16;
+			return hexChars[digit1].ToString() + hexChars[digit2].ToString();
+		}
 
-			double varU = (4 * X) / (X + (15 * Y) + (3 * Z));
-			double varV = (9 * Y) / (X + (15 * Y) + (3 * Z));
+		private static double HexToRgbChannel(string hex, int offset)
+		{
+			int digit1 = hexChars.IndexOf(hex[offset]);
+			int digit2 = hexChars.IndexOf(hex[offset + 1]);
+			int n = digit1 * 16 + digit2;
+			return n / 255.0;
+		}
 
-			double L = YToL(Y);
+		public void RgbToHex()
+		{
+			this.hex = "#"
+				+ RgbChannelToHex(this.rgb_r)
+				+ RgbChannelToHex(this.rgb_g)
+				+ RgbChannelToHex(this.rgb_b);
+		}
 
-			if (L == 0) 
+		public void HexToRgb()
+		{
+			this.hex = this.hex.ToLowerInvariant();
+			this.rgb_r = HexToRgbChannel(this.hex, 1);
+			this.rgb_g = HexToRgbChannel(this.hex, 3);
+			this.rgb_b = HexToRgbChannel(this.hex, 5);
+		}
+
+		public void XyzToRgb()
+		{
+			this.rgb_r = FromLinear(m_r0 * this.xyz_x + m_r1 * this.xyz_y + m_r2 * this.xyz_z);
+			this.rgb_g = FromLinear(m_g0 * this.xyz_x + m_g1 * this.xyz_y + m_g2 * this.xyz_z);
+			this.rgb_b = FromLinear(m_b0 * this.xyz_x + m_b1 * this.xyz_y + m_b2 * this.xyz_z);
+		}
+
+		public void RgbToXyz()
+		{
+			double lr = ToLinear(this.rgb_r);
+			double lg = ToLinear(this.rgb_g);
+			double lb = ToLinear(this.rgb_b);
+			this.xyz_x = 0.41239079926595 * lr + 0.35758433938387 * lg + 0.18048078840183 * lb;
+			this.xyz_y = 0.21263900587151 * lr + 0.71516867876775 * lg + 0.072192315360733 * lb;
+			this.xyz_z = 0.019330818715591 * lr + 0.11919477979462 * lg + 0.95053215224966 * lb;
+		}
+
+		public void XyzToLuv()
+		{
+			double divider = this.xyz_x + (15 * this.xyz_y) + (3 * this.xyz_z);
+			double varU = 4 * this.xyz_x;
+			double varV = 9 * this.xyz_y;
+
+			if (divider != 0)
 			{
-				return new double[] { 0, 0, 0 };
+				varU /= divider;
+				varV /= divider;
+			}
+			else
+			{
+				varU = double.NaN;
+				varV = double.NaN;
 			}
 
-			var U = 13 * L * (varU - RefU);
-			var V = 13 * L * (varV - RefV);
-
-			return new Double [] { L, U, V };
+			this.luv_l = YToL(this.xyz_y);
+			if (this.luv_l == 0)
+			{
+				this.luv_u = 0;
+				this.luv_v = 0;
+			}
+			else
+			{
+				this.luv_u = 13 * this.luv_l * (varU - refU);
+				this.luv_v = 13 * this.luv_l * (varV - refV);
+			}
 		}
 
-		public static IList<double> LuvToXyz(IList<double> tuple)
+		public void LuvToXyz()
 		{
-			double L = tuple[0];
-			double U = tuple[1];
-			double V = tuple[2];
-
-			if (L == 0) 
+			if (this.luv_l == 0)
 			{
-				return new double[] { 0, 0, 0 };
+				this.xyz_x = 0;
+				this.xyz_y = 0;
+				this.xyz_z = 0;
+				return;
 			}
 
-			double varU = U / (13 * L) + RefU;
-			double varV = V / (13 * L) + RefV;
+			double varU = this.luv_u / (13 * this.luv_l) + refU;
+			double varV = this.luv_v / (13 * this.luv_l) + refV;
 
-			double Y = LToY(L);
-			double X = 0 - (9 * Y * varU) / ((varU - 4) * varV - varU * varV);
-			double Z = (9 * Y - (15 * varV * Y) - (varV * X)) / (3 * varV);
-
-			return new double[] { X, Y, Z };
+			this.xyz_y = LToY(this.luv_l);
+			this.xyz_x = 0 - (9 * this.xyz_y * varU) / ((varU - 4) * varV - varU * varV);
+			this.xyz_z = (9 * this.xyz_y - (15 * varV * this.xyz_y) - (varV * this.xyz_x)) / (3 * varV);
 		}
 
-		public static IList<double> LuvToLch(IList<double> tuple)
+		public void LuvToLch()
 		{
-			double L = tuple[0];
-			double U = tuple[1];
-			double V = tuple[2];
+			this.lch_l = this.luv_l;
+			this.lch_c = Math.Sqrt(this.luv_u * this.luv_u + this.luv_v * this.luv_v);
 
-			double C = Math.Pow(Math.Pow(U, 2) + Math.Pow(V, 2), 0.5);
-			double Hrad = Math.Atan2(V, U);
-
-			double H = Hrad * 180.0 / Math.PI;
-
-			if (H < 0) 
+			// Greys: disambiguate hue
+			if (this.lch_c < 0.00000001)
 			{
-				H = 360 + H;
+				this.lch_h = 0;
 			}
-
-			return new double[] { L, C, H };
-		}
-
-		public static IList<double> LchToLuv(IList<double> tuple)
-		{
-			double L = tuple[0];
-			double C = tuple[1];
-			double H = tuple[2];
-
-			double Hrad = H / 360.0 * 2 * Math.PI;
-			double U = Math.Cos(Hrad) * C;
-			double V = Math.Sin(Hrad) * C;
-
-			return new Double [] { L, U, V };
-		}
-
-		public static IList<double> HsluvToLch(IList<double> tuple)
-		{
-			double H = tuple[0];
-			double S = tuple[1]; 
-			double L = tuple[2];
-
-			if (L > 99.9999999)
+			else
 			{
-				return new Double[] { 100, 0, H };
+				double Hrad = Math.Atan2(this.luv_v, this.luv_u);
+				this.lch_h = (Hrad * 180.0) / Math.PI;
+
+				if (this.lch_h < 0)
+				{
+					this.lch_h = 360 + this.lch_h;
+				}
 			}
+		}
 
-			if (L < 0.00000001) 
+		public void LchToLuv()
+		{
+			double Hrad = this.lch_h / 180.0 * Math.PI;
+			this.luv_l = this.lch_l;
+			this.luv_u = Math.Cos(Hrad) * this.lch_c;
+			this.luv_v = Math.Sin(Hrad) * this.lch_c;
+		}
+
+		/// <summary>
+		/// For a given lightness, generate a list of 6 lines in slope-intercept
+		/// form that represent the bounds in CIELUV, stepping over which will
+		/// push a value out of the RGB gamut.
+		/// </summary>
+		public void CalculateBoundingLines(double l)
+		{
+			double sub1 = Math.Pow(l + 16, 3) / 1560896;
+			double sub2 = sub1 > epsilon ? sub1 : l / kappa;
+
+			double s1r = sub2 * (284517 * m_r0 - 94839 * m_r2);
+			double s2r = sub2 * (838422 * m_r2 + 769860 * m_r1 + 731718 * m_r0);
+			double s3r = sub2 * (632260 * m_r2 - 126452 * m_r1);
+
+			double s1g = sub2 * (284517 * m_g0 - 94839 * m_g2);
+			double s2g = sub2 * (838422 * m_g2 + 769860 * m_g1 + 731718 * m_g0);
+			double s3g = sub2 * (632260 * m_g2 - 126452 * m_g1);
+
+			double s1b = sub2 * (284517 * m_b0 - 94839 * m_b2);
+			double s2b = sub2 * (838422 * m_b2 + 769860 * m_b1 + 731718 * m_b0);
+			double s3b = sub2 * (632260 * m_b2 - 126452 * m_b1);
+
+			this.r0s = s1r / s3r;
+			this.r0i = s2r * l / s3r;
+			this.r1s = s1r / (s3r + 126452);
+			this.r1i = (s2r - 769860) * l / (s3r + 126452);
+
+			this.g0s = s1g / s3g;
+			this.g0i = s2g * l / s3g;
+			this.g1s = s1g / (s3g + 126452);
+			this.g1i = (s2g - 769860) * l / (s3g + 126452);
+
+			this.b0s = s1b / s3b;
+			this.b0i = s2b * l / s3b;
+			this.b1s = s1b / (s3b + 126452);
+			this.b1i = (s2b - 769860) * l / (s3b + 126452);
+		}
+
+		// theta  -- angle of ray starting at (0, 0)
+		// m, b   -- slope and intercept of line
+		// x1, y1 -- coordinates of intersection
+		// len    -- length of ray until it intersects with line
+		//
+		// b + m * x1        = y1
+		// len              >= 0
+		// len * cos(theta)  = x1
+		// len * sin(theta)  = y1
+		//
+		//
+		// b + m * (len * cos(theta)) = len * sin(theta)
+		// b = len * sin(hrad) - m * len * cos(theta)
+		// b = len * (sin(hrad) - m * cos(hrad))
+		// len = b / (sin(hrad) - m * cos(hrad))
+		private static double DistanceFromOriginAngle(double slope, double intercept, double angle)
+		{
+			double d = intercept / (Math.Sin(angle) - slope * Math.Cos(angle));
+			if (d < 0)
 			{
-				return new Double[] { 0, 0, H };
+				return double.PositiveInfinity;
 			}
-
-			double max = MaxChromaForLH(L, H);
-			double C = max / 100 * S;
-
-			return new double[] { L, C, H };
-		}
-
-		public static IList<double> LchToHsluv(IList<double> tuple)
-		{
-			double L = tuple[0];
-			double C = tuple[1];
-			double H = tuple[2];
-
-			if (L > 99.9999999) 
+			else
 			{
-				return new Double[] { H, 0, 100 };
+				return d;
 			}
+		}
 
-			if (L < 0.00000001) 
+		private static double DistanceFromOrigin(double slope, double intercept)
+		{
+			return Math.Abs(intercept) / Math.Sqrt(Math.Pow(slope, 2) + 1);
+		}
+
+		private static double Min6(double f1, double f2, double f3, double f4, double f5, double f6)
+		{
+			return Math.Min(f1, Math.Min(f2, Math.Min(f3, Math.Min(f4, Math.Min(f5, f6)))));
+		}
+
+		/// <summary>
+		/// For HPLuv, we simply see which bounding line is closest to the origin
+		/// by measuring the length of its perpendicular. The shortest perpendicular
+		/// determines maximum chroma.
+		/// </summary>
+		public double CalcMaxChromaHpluv()
+		{
+			double r0 = DistanceFromOrigin(this.r0s, this.r0i);
+			double r1 = DistanceFromOrigin(this.r1s, this.r1i);
+			double g0 = DistanceFromOrigin(this.g0s, this.g0i);
+			double g1 = DistanceFromOrigin(this.g1s, this.g1i);
+			double b0 = DistanceFromOrigin(this.b0s, this.b0i);
+			double b1 = DistanceFromOrigin(this.b1s, this.b1i);
+			return Min6(r0, r1, g0, g1, b0, b1);
+		}
+
+		/// <summary>
+		/// For HSLuv, we draw a ray from origin with angle specified by the hue.
+		/// Multiple bounding lines may intercept this ray. The first one to intercept
+		/// it determines maximum chroma.
+		/// </summary>
+		public double CalcMaxChromaHsluv(double h)
+		{
+			double hueRad = h / 360 * Math.PI * 2;
+			double r0 = DistanceFromOriginAngle(this.r0s, this.r0i, hueRad);
+			double r1 = DistanceFromOriginAngle(this.r1s, this.r1i, hueRad);
+			double g0 = DistanceFromOriginAngle(this.g0s, this.g0i, hueRad);
+			double g1 = DistanceFromOriginAngle(this.g1s, this.g1i, hueRad);
+			double b0 = DistanceFromOriginAngle(this.b0s, this.b0i, hueRad);
+			double b1 = DistanceFromOriginAngle(this.b1s, this.b1i, hueRad);
+			return Min6(r0, r1, g0, g1, b0, b1);
+		}
+
+		public void HsluvToLch()
+		{
+			// White and black: disambiguate chroma
+			if (this.hsluv_l > 99.9999999)
 			{
-				return new Double[] { H, 0, 0 };
+				this.lch_l = 100;
+				this.lch_c = 0;
 			}
-
-			double max = MaxChromaForLH(L, H);
-			double S = C / max * 100;
-
-			return new double[] { H, S, L };
-		}
-
-		public static IList<double> HpluvToLch(IList<double> tuple)
-		{
-			double H = tuple[0];
-			double S = tuple[1]; 
-			double L = tuple[2];
-
-			if (L > 99.9999999)
+			else if (this.hsluv_l < 0.00000001)
 			{
-				return new Double[] { 100, 0, H };
+				this.lch_l = 0;
+				this.lch_c = 0;
 			}
-
-			if (L < 0.00000001) 
+			else
 			{
-				return new Double[] { 0, 0, H };
+				this.lch_l = this.hsluv_l;
+				this.CalculateBoundingLines(this.hsluv_l);
+				double max = this.CalcMaxChromaHsluv(this.hsluv_h);
+				this.lch_c = max / 100 * this.hsluv_s;
 			}
-
-			double max = MaxSafeChromaForL(L);
-			double C = max / 100 * S;
-
-			return new double[] { L, C, H };
+			this.lch_h = this.hsluv_h;
 		}
 
-		public static IList<double> LchToHpluv(IList<double> tuple)
+		public void LchToHsluv()
 		{
-			double L = tuple[0];
-			double C = tuple[1];
-			double H = tuple[2];
-
-			if (L > 99.9999999) 
+			// White and black: disambiguate chroma
+			if (this.lch_l > 99.9999999)
 			{
-				return new Double[] { H, 0, 100 };
+				this.hsluv_s = 0;
+				this.hsluv_l = 100;
 			}
-
-			if (L < 0.00000001) 
+			else if (this.lch_l < 0.00000001)
 			{
-				return new Double[] { H, 0, 0 };
+				this.hsluv_s = 0;
+				this.hsluv_l = 0;
 			}
-
-			double max = MaxSafeChromaForL(L);
-			double S = C / max * 100;
-
-			return new double[] { H, S, L };
-		}
-
-		public static string RgbToHex(IList<double> tuple)
-		{
-			IList<int> prepared = RgbPrepare(tuple);
-
-			return string.Format("#{0}{1}{2}",
-				prepared[0].ToString("x2"),
-				prepared[1].ToString("x2"),
-				prepared[2].ToString("x2"));
-		}
-
-		public static IList<double> HexToRgb(string hex)
-		{
-			return new double[]
+			else
 			{
-				int.Parse(hex.Substring(1, 2), System.Globalization.NumberStyles.HexNumber) / 255.0,
-				int.Parse(hex.Substring(3, 2), System.Globalization.NumberStyles.HexNumber) / 255.0,
-				int.Parse(hex.Substring(5, 2), System.Globalization.NumberStyles.HexNumber) / 255.0,
-			};
+				this.CalculateBoundingLines(this.lch_l);
+				double max = this.CalcMaxChromaHsluv(this.lch_h);
+				this.hsluv_s = this.lch_c / max * 100;
+				this.hsluv_l = this.lch_l;
+			}
+			this.hsluv_h = this.lch_h;
 		}
 
-		public static IList<double> LchToRgb(IList<double> tuple)
+		public void HpluvToLch()
 		{
-			return XyzToRgb(LuvToXyz(LchToLuv(tuple)));
+			// White and black: disambiguate chroma
+			if (this.hpluv_l > 99.9999999)
+			{
+				this.lch_l = 100;
+				this.lch_c = 0;
+			}
+			else if (this.hpluv_l < 0.00000001)
+			{
+				this.lch_l = 0;
+				this.lch_c = 0;
+			}
+			else
+			{
+				this.lch_l = this.hpluv_l;
+				this.CalculateBoundingLines(this.hpluv_l);
+				double max = this.CalcMaxChromaHpluv();
+				this.lch_c = max / 100 * this.hpluv_p;
+			}
+			this.lch_h = this.hpluv_h;
 		}
 
-		public static IList<double> RgbToLch(IList<double> tuple)
+		public void LchToHpluv()
 		{
-			return LuvToLch(XyzToLuv(RgbToXyz(tuple)));
+			// White and black: disambiguate chroma
+			if (this.lch_l > 99.9999999)
+			{
+				this.hpluv_p = 0;
+				this.hpluv_l = 100;
+			}
+			else if (this.lch_l < 0.00000001)
+			{
+				this.hpluv_p = 0;
+				this.hpluv_l = 0;
+			}
+			else
+			{
+				this.CalculateBoundingLines(this.lch_l);
+				double max = this.CalcMaxChromaHpluv();
+				this.hpluv_p = this.lch_c / max * 100;
+				this.hpluv_l = this.lch_l;
+			}
+			this.hpluv_h = this.lch_h;
 		}
 
-		// Rgb <--> Hsluv(p)
-
-		public static IList<double> HsluvToRgb(IList<double> tuple)
+		public void HsluvToRgb()
 		{
-			return LchToRgb(HsluvToLch(tuple));
+			this.HsluvToLch();
+			this.LchToLuv();
+			this.LuvToXyz();
+			this.XyzToRgb();
 		}
 
-		public static IList<double> RgbToHsluv(IList<double> tuple)
+		public void HpluvToRgb()
 		{
-			return LchToHsluv(RgbToLch(tuple));
+			this.HpluvToLch();
+			this.LchToLuv();
+			this.LuvToXyz();
+			this.XyzToRgb();
 		}
 
-		public static IList<double> HpluvToRgb(IList<double> tuple)
+		public void HsluvToHex()
 		{
-			return LchToRgb(HpluvToLch(tuple));
+			this.HsluvToRgb();
+			this.RgbToHex();
 		}
 
-		public static IList<double> RgbToHpluv(IList<double> tuple)
+		public void HpluvToHex()
 		{
-			return LchToHpluv(RgbToLch(tuple));
+			this.HpluvToRgb();
+			this.RgbToHex();
 		}
 
-		// Hex
-
-		public static string HsluvToHex(IList<double> tuple)
+		public void RgbToHsluv()
 		{
-			return RgbToHex (HsluvToRgb (tuple));
+			this.RgbToXyz();
+			this.XyzToLuv();
+			this.LuvToLch();
+			this.LchToHpluv();
+			this.LchToHsluv();
 		}
 
-		public static string HpluvToHex(IList<double> tuple)
+		public void RgbToHpluv()
 		{
-			return RgbToHex (HpluvToRgb (tuple));
-		}
-			
-		public static IList<double> HexToHsluv(string s)
-		{
-			return RgbToHsluv (HexToRgb (s));
+			this.RgbToXyz();
+			this.XyzToLuv();
+			this.LuvToLch();
+			this.LchToHpluv();
+			this.LchToHpluv();
 		}
 
-		public static IList<double> HexToHpluv(string s)
+		public void HexToHsluv()
 		{
-			return RgbToHpluv (HexToRgb (s));
+			this.HexToRgb();
+			this.RgbToHsluv();
+		}
+
+		public void HexToHpluv()
+		{
+			this.HexToRgb();
+			this.RgbToHpluv();
 		}
 	}
 }
-
