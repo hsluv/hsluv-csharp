@@ -1,13 +1,19 @@
 name: Compile and test
 
 on:
-  - pull_request
-  - push
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Install Mono
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-mcs
       - run: mcs HsluvTest/HsluvConverterTest.cs HsluvTest/MiniJSON.cs Hsluv/Hsluv.cs -resource:HsluvTest/snapshot-rev3.json,JsonSnapshotRev3 -main:HsluvTest.HsluvConverterTest
       - run: mono ./HsluvTest/HsluvConverterTest.exe
