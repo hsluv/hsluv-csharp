@@ -88,8 +88,9 @@ so no long-lived API key is stored in GitHub.
 
 One-time setup:
 
-1. On nuget.org, sign in as the package owner, open **Trusted Publishing** and add a policy:
-   - Repository Owner: `hsluv`
+1. On nuget.org, sign in as an owner of the `Hsluv` package, open **Trusted Publishing** and add a policy:
+   - Package Owner: your account (it must be an owner of `Hsluv`, see **Manage → Owners** on the package page)
+   - Repository Owner: `hsluv` (the GitHub organization)
    - Repository: `hsluv-csharp`
    - Workflow File: `release.yml`
    - Environment: `release`
