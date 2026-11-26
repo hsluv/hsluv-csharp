@@ -5,7 +5,7 @@
     <version>1.0.2</version>
     <authors>Alexei Boronine</authors>
     <owners>Alexei Boronine</owners>
-    <licenseUrl>https://raw.githubusercontent.com/hsluv/hsluv-csharp/master/LICENSE.txt</licenseUrl>
+    <licenseUrl>https://raw.githubusercontent.com/hsluv/hsluv-csharp/main/LICENSE.txt</licenseUrl>
     <projectUrl>https://github.com/hsluv/hsluv-csharp</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Human-friendly HSL</description>
